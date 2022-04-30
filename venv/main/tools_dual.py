@@ -85,21 +85,22 @@ def calculate_prior_demand(pon, poffs, c, con, scenario):
         alpha_l = 1 - alpha_o - alpha_s
     elif scenario == 5:
         alpha_o = 1 / (2 * con) * (2 - min(1, 1 / 2 * pon + 4 * c, 3 / 2 * pon) - min(1, 1 / 2 * pon + 4 * c)) * (
-                2 * c - 1 / 2 * pon)
-        alpha_so_prior = 1 / (2 * con) * (1 - min(1 / 2 * pon - 4 * c, 1)) * (1 - 1 / 2 * pon - 4 * c)
+            min(2 * c - 1 / 2 * pon, 1 / 2 * (1 - 3 / 2 * pon)))
+        alpha_so_prior = 1 / (2 * con) * (1 - min(1 / 2 * pon + 4 * c, 1)) * (1 - 1 / 2 * pon - 4 * c)
         alpha_ss_prior = 0
         alpha_s = alpha_so_prior + alpha_ss_prior
         alpha_l = 1 - alpha_o - alpha_s
     elif scenario == 6:
         alpha_ss_prior = 0
         if con >= 1 - pon - 2 * c:
-            alpha_o = 1 / (2 * con) * (2 - 2 * pon - 4 * c) * (2 * c - 1 / 2 * pon)
-            alpha_so_prior = 1 / (2 * con) * (1 - 1 / 2 * pon - 4 * c) * (1 - 1 / 2 * pon - 4 * c)
+            alpha_o = 1 / (2 * con) * (2 - min(1, 1 / 2 * pon + 4 * c, 3 / 2 * pon) - min(1, 1 / 2 * pon + 4 * c)) * (
+                min(2 * c - 1 / 2 * pon, 1 / 2 * (1 - 3 / 2 * pon)))
+            alpha_so_prior = 1 / (2 * con) * (1 - min(1 / 2 * pon + 4 * c, 1)) * (1 - 1 / 2 * pon - 4 * c)
         elif 1 - pon * 2 * c > con >= 2 * c - 1 / 2 * pon:
             alpha_o = 1 / (2 * con) * (2 - 2 * pon - 4 * c) * (2 * c - 1 / 2 * pon)
             alpha_so_prior = 1 / (2 * con) * (2 - 3 / 2 * pon - con - 6 * c) * (con - 2 * c + 1 / 2 * pon)
         else:
-            alpha_o = 1 / (2 * con) * con * (2 - 3 * pon - 2 * con)
+            alpha_o = 1 / (2 * con) * con * (2 - min(1, 2 * con + 3 / 2 * pon) - min(1, 3 / 2 * pon))
             alpha_so_prior = 0
         alpha_s = alpha_so_prior + alpha_ss_prior
         alpha_l = 1 - alpha_o - alpha_s
@@ -120,7 +121,7 @@ def calculate_prior_demand(pon, poffs, c, con, scenario):
         else:
             alpha_o = 0
             alpha_ss_prior = 0
-            alpha_so_prior = 1 / (2 * con) * min(con, 1-pon-2*c) * (2 - pon - 2 * c - min(1, pon + con + 2 * c))
+            alpha_so_prior = 1 / (2 * con) * min(con, 1 - pon - 2 * c) * (2 - pon - 2 * c - min(1, pon + con + 2 * c))
             alpha_s = alpha_so_prior + alpha_ss_prior
         alpha_l = 1 - alpha_o - alpha_s
     elif scenario == 9:
