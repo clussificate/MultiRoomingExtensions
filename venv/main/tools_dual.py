@@ -6,6 +6,7 @@
 @Desc:
 """
 import numpy as np
+import logging
 
 EPSILON = 0.000001
 
@@ -45,7 +46,7 @@ def scenario_check(pon, poffs, c, con):
     elif 1 / 2 * pon + 2 * c >= poffs >= 1 - 2 * c and 1 / 2 * poffs - 3 / 4 * pon + c <= 0:
         return 14
     else:
-        print("pon: {}, poffs: {}, c: {}, con: {}".format(pon, poffs, c, con))
+        logging.error("pon: {}, poffs: {}, c: {}, con: {}".format(pon, poffs, c, con))
         raise Exception("Unidentified scenario")
 
 
@@ -161,7 +162,7 @@ def calculate_prior_demand(pon, poffs, c, con, scenario):
         alpha_s = 0
         alpha_l = 1 - alpha_o - alpha_s
     else:
-        raise Exception("Demand cal fail:")
+        raise Exception("Demand cal fail.")
 
     alpha_o = myround(alpha_o)
     alpha_s = myround(alpha_s)
@@ -178,7 +179,7 @@ def calculate_store_demand(pon, poff, c, con, alpha_s):
         prop_ss = 0
         prop_so = 1 / (2 * con) * (2 - 2 * pon - con) * con
     else:
-        prop_ss = 1 / (con) * (1 - poff) * con
+        prop_ss = 1 / con * (1 - poff) * con
         prop_so = 0
 
     prop_ss = prop_ss
@@ -220,7 +221,7 @@ def FindRationalExpectations(pon, poffs, c, con, alpha_s):
                                                     c=c, con=con, alpha_s=alpha_s)
         if alpha_ss > 1 or alpha_ss < 0.0 or alpha_so > 1 or alpha_so < 0.0:
             print("error instore demand")
-            print("poffs: {:.3}, poff: {:.3},ss: {:.3},so: {:.3}".format(
+            print("poffs: {:.3f}, poff: {:.3f},ss: {:.3f},so: {:.3f}".format(
                 poffs, poff, alpha_ss, alpha_so))
         current_profit_store = cal_store_profit(pon=pon, poff=poff, alpha_ss=alpha_ss, alpha_so=alpha_so)
         # print("current poff: {:.3}, current store profit: {:.5}".format(poff, current_profit_store))

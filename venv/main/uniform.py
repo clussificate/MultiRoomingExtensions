@@ -7,6 +7,7 @@
 """
 import numpy as np
 from tools_uniform import *
+import logging
 
 
 def solve_equilibrium(c, cr, con):
@@ -21,8 +22,8 @@ def solve_equilibrium(c, cr, con):
         if optimal_total_profit < current_profit:
             optimal_total_profit = current_profit
             optimal_p = p
-    print("optimal price: {:.5f}, profit: {:.5f}".format(optimal_p, optimal_total_profit))
+    logging.info("optimal price: {:.5f}, profit: {:.5f}".format(optimal_p, optimal_total_profit))
     return optimal_p, optimal_total_profit
 
 
-solve_equilibrium(c=0.05, cr=0.1, con=0.2)
+solve_equilibrium(c=0.1, cr=0.1, con=0.2)
