@@ -20,7 +20,7 @@ def solve_equilibrium(c, cr, con):
     optimal_poff = 0
     optimal_pon = 0
     for pon in np.arange(0, 1, 0.01):
-        logger.info("----------------------------")
+        logger.debug("-------------------------")
         # given pon, find the RE that maximizes total profit given pon from all potential REs.
         RE_profit_givenpon = 0  # the RE that maximizes total profit given pon.
         poffs_givenpon = 0  # the RE that maximizes total profit given pon.
@@ -43,10 +43,15 @@ def solve_equilibrium(c, cr, con):
             if not alpha_s:
                 # zero prior store demand, RE exists
                 RE_profit_givenpon_zero_store_demand = cal_profit(pon=pon, cr=cr, alpha_o=alpha_o, store_profit=0)
-                logger.info("Current poffs causes zero store demand, and online profit: {:.3f}".format(
+                logger.debug("Current poffs causes zero store demand, and online profit: {:.3f}".format(
                     RE_profit_givenpon_zero_store_demand))
                 if RE_profit_givenpon < RE_profit_givenpon_zero_store_demand:
                     RE_profit_givenpon = RE_profit_givenpon_zero_store_demand
+                    poffs_givenpon = poffs
+                    poffstar_givenpon = poffs
+                    logger.info("Given pon={:.3f}, no store demand, a RE is found: poffs: {:.5f}, poff: {:.5f}, "
+                                "alpha_o:{}, total profit: {:.3f}, scenario: {}.".format(
+                        pon, poffs_givenpon, poffstar_givenpon, alpha_o,RE_profit_givenpon, current_scenario))
                 continue  # look for the next poffs
 
             # if prior store demand > 0, start to find a RE
@@ -61,8 +66,9 @@ def solve_equilibrium(c, cr, con):
                 potential_RE_profit_givenpon = cal_profit(pon=pon, cr=cr, alpha_o=alpha_o,
                                                           store_profit=store_profit)
 
-                logger.info("store profit:{:.5f}, alpha_o:{:.5f}, total: {:.5f}".format(
-                    store_profit, alpha_o, potential_RE_profit_givenpon))
+                logger.info("store profit:{:.5f}, "
+                            "alpha_o:{:.5f}, alpha_s:{:.5f}, total profit: {:.5f}, scenario: {}".format(
+                    store_profit, alpha_o, alpha_s, potential_RE_profit_givenpon, current_scenario))
                 if RE_profit_givenpon < potential_RE_profit_givenpon:
                     RE_profit_givenpon = potential_RE_profit_givenpon
                     poffs_givenpon = store_price
@@ -86,5 +92,4 @@ def solve_equilibrium(c, cr, con):
 
 
 if __name__ == "__main__":
-    print("now")
-    solve_equilibrium(c=0.25, cr=0.1, con=0.2)
+    solve_equilibrium(c=0.17, cr=0.2, con=0.05)

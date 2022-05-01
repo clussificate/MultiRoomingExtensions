@@ -54,18 +54,14 @@ def calculate_prior_demand(pon, poffs, c, con, scenario):
         alpha_o = 1 / (2 * con) * (2 - 2 * pon - 4 * c) * (2 * c - 1 / 2 * pon)
         alpha_so_prior = 1 / (2 * con) * (2 - 6 * c - poffs - 1 / 2 * pon) * (poffs - 1 / 2 * pon - 2 * c)
         alpha_ss_prior = 1 / con * (con - poffs + pon) * (1 - poffs - 2 * c)
-        alpha_s = alpha_so_prior + alpha_ss_prior
-        alpha_l = 1 - alpha_o - alpha_s
     elif scenario == 2:
+        alpha_ss_prior = 0
         if con > 2 * c - 1 / 2 * pon:
             alpha_o = 1 / (2 * con) * (2 - 2 * pon - 4 * c) * (2 * c - 1 / 2 * pon)
             alpha_so_prior = 1 / (2 * con) * (2 - con - 3 / 2 * pon - 6 * c) * (con + 1 / 2 * pon - 2 * c)
         else:
             alpha_o = 1 / (2 * con) * con * (2 - 2 * con - 3 * pon)
             alpha_so_prior = 0
-        alpha_ss_prior = 0
-        alpha_s = alpha_so_prior + alpha_ss_prior
-        alpha_l = 1 - alpha_o - alpha_s
     elif scenario == 3:
         alpha_o = 0
         if poffs >= pon:
@@ -74,21 +70,15 @@ def calculate_prior_demand(pon, poffs, c, con, scenario):
         else:
             alpha_so_prior = 0
             alpha_ss_prior = 1 / con * con * (1 - 2 * c - poffs)
-        alpha_s = alpha_so_prior + alpha_ss_prior
-        alpha_l = 1 - alpha_o - alpha_s
     elif scenario == 4:
         alpha_o = 0
         alpha_so_prior = 1 / (2 * con) * con * (2 - con - 2 * pon - 4 * c)
         alpha_ss_prior = 0
-        alpha_s = alpha_so_prior + alpha_ss_prior
-        alpha_l = 1 - alpha_o - alpha_s
     elif scenario == 5:
         alpha_o = 1 / (2 * con) * (2 - min(1, 1 / 2 * pon + 4 * c, 3 / 2 * pon) - min(1, 1 / 2 * pon + 4 * c)) * (
             min(2 * c - 1 / 2 * pon, 1 / 2 * (1 - 3 / 2 * pon)))
         alpha_so_prior = 1 / (2 * con) * (1 - min(1 / 2 * pon + 4 * c, 1)) * (1 - 1 / 2 * pon - 4 * c)
         alpha_ss_prior = 0
-        alpha_s = alpha_so_prior + alpha_ss_prior
-        alpha_l = 1 - alpha_o - alpha_s
     elif scenario == 6:
         alpha_ss_prior = 0
         if con >= 1 - pon - 2 * c:
@@ -101,52 +91,40 @@ def calculate_prior_demand(pon, poffs, c, con, scenario):
         else:
             alpha_o = 1 / (2 * con) * con * (2 - min(1, 2 * con + 3 / 2 * pon) - min(1, 3 / 2 * pon))
             alpha_so_prior = 0
-        alpha_s = alpha_so_prior + alpha_ss_prior
-        alpha_l = 1 - alpha_o - alpha_s
     elif scenario == 7:
         if pon >= 1 - 2 * c or poffs <= pon:
             alpha_o = 0
-            alpha_s = 0
+            alpha_so_prior = 0
+            alpha_ss_prior = 0
         else:
             alpha_o = 0
             alpha_so_prior = 1 / (2 * con) * (1 - pon - 2 * c) * (1 - pon - 2 * c)
             alpha_ss_prior = 0
-            alpha_s = alpha_so_prior + alpha_ss_prior
-        alpha_l = 1 - alpha_o - alpha_s
     elif scenario == 8:
         if pon >= 1 - 2 * c:
             alpha_o = 0
-            alpha_s = 0
+            alpha_so_prior = 0
+            alpha_ss_prior = 0
         else:
             alpha_o = 0
             alpha_ss_prior = 0
             alpha_so_prior = 1 / (2 * con) * min(con, 1 - pon - 2 * c) * (2 - pon - 2 * c - min(1, pon + con + 2 * c))
-            alpha_s = alpha_so_prior + alpha_ss_prior
-        alpha_l = 1 - alpha_o - alpha_s
     elif scenario == 9:
         alpha_o = 1 / (2 * con) * (2 - poffs - 2 * c - 3 / 2 * pon) * (1 / 2 * poffs - 3 / 4 * pon + c)
         alpha_so_prior = 0
         alpha_ss_prior = 1 / con * (con - 1 / 2 * poffs + 3 / 4 * pon - c) * (1 - poffs - 2 * c)
-        alpha_s = alpha_so_prior + alpha_ss_prior
-        alpha_l = 1 - alpha_o - alpha_s
     elif scenario == 10:
         alpha_o = 1 / (2 * con) * con * (2 - 2 * con - 3 * pon)
         alpha_so_prior = 0
         alpha_ss_prior = 0
-        alpha_s = alpha_so_prior + alpha_ss_prior
-        alpha_l = 1 - alpha_o - alpha_s
     elif scenario == 11:
         alpha_o = 0
         alpha_so_prior = 0
         alpha_ss_prior = 1 / con * con * (1 - poffs - 2 * c)
-        alpha_s = alpha_so_prior + alpha_ss_prior
-        alpha_l = 1 - alpha_o - alpha_s
     elif scenario == 12:
         alpha_o = 1 / (2 * con) * (1 - min(3 / 2 * pon, 1)) * (1 / 2 - 3 / 4 * pon)
         alpha_so_prior = 0
         alpha_ss_prior = 0
-        alpha_s = alpha_so_prior + alpha_ss_prior
-        alpha_l = 1 - alpha_o - alpha_s
     elif scenario == 13:
         if pon >= 2 / 3:
             alpha_o = 0
@@ -155,15 +133,23 @@ def calculate_prior_demand(pon, poffs, c, con, scenario):
                     2 - 3 / 2 * pon - min(2 * con + 3 / 2 * pon, 1))
         alpha_so_prior = 0
         alpha_ss_prior = 0
-        alpha_s = alpha_so_prior + alpha_ss_prior
-        alpha_l = 1 - alpha_o - alpha_s
     elif scenario == 14:
         alpha_o = 0
-        alpha_s = 0
-        alpha_l = 1 - alpha_o - alpha_s
+        alpha_so_prior = 0
+        alpha_ss_prior = 0
     else:
         raise Exception("Demand cal fail.")
+    alpha_so_prior = myround(alpha_so_prior)
+    alpha_ss_prior = myround(alpha_ss_prior)
+    if 0 <= alpha_so_prior <= 1 and 0 <= alpha_ss_prior <= 1:
+        alpha_s = alpha_so_prior + alpha_ss_prior
+    else:
+        print("c: {}, con:{}, pon: {:.3f}, poffs: {:.3f}, scenario: {}".format(
+            c, con, pon, poffs, scenario))
+        print("alpha_so:{:.5f}, alpha_ss: {:.5f}".format(alpha_so_prior, alpha_ss_prior))
+        raise Exception("error prior demand!")
 
+    alpha_l = 1 - alpha_o - alpha_s
     alpha_o = myround(alpha_o)
     alpha_s = myround(alpha_s)
     alpha_l = myround(alpha_l)
