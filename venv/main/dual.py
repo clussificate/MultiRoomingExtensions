@@ -43,15 +43,19 @@ def solve_equilibrium(c, cr, con):
             if not alpha_s:
                 # zero prior store demand, RE exists
                 RE_profit_givenpon_zero_store_demand = cal_profit(pon=pon, cr=cr, alpha_o=alpha_o, store_profit=0)
-                logger.debug("Current poffs causes zero store demand, and online profit: {:.3f}".format(
+                logger.debug("Current poffs causes zero store demand, and online profit: {:.5f}".format(
                     RE_profit_givenpon_zero_store_demand))
-                if RE_profit_givenpon < RE_profit_givenpon_zero_store_demand:
+                if myround(RE_profit_givenpon - RE_profit_givenpon_zero_store_demand) < 0:
+                    # if pon == 0.37:
+                    #     logger.info("current zero-store-demand profit: {:.8f}, "
+                    #                  "optimal zero-store-demand profit: {:.8f}".format(
+                    #         RE_profit_givenpon_zero_store_`demand, RE_profit_givenpon))
                     RE_profit_givenpon = RE_profit_givenpon_zero_store_demand
                     poffs_givenpon = poffs
                     poffstar_givenpon = poffs
-                    logger.info("Given pon={:.3f}, no store demand, a RE is found: poffs: {:.5f}, poff: {:.5f}, "
-                                "alpha_o:{}, total profit: {:.3f}, scenario: {}.".format(
-                        pon, poffs_givenpon, poffstar_givenpon, alpha_o,RE_profit_givenpon, current_scenario))
+                    logger.info("Given pon={:.3f}, no store demand, a RE is found: poffs: {:.3f}, poff: {:.3f}, "
+                                "alpha_o:{:.3f}, total profit: {:.6f}, scenario: {}.".format(
+                        pon, poffs_givenpon, poffstar_givenpon, alpha_o, RE_profit_givenpon, current_scenario))
                 continue  # look for the next poffs
 
             # if prior store demand > 0, start to find a RE
@@ -61,29 +65,29 @@ def solve_equilibrium(c, cr, con):
 
             if RE_found:
                 logger.info(
-                    "Given pon={:.5f}, a RE is found. poffs: {:.5f}, poff: {:.5f}.".format(pon, poffs, store_price))
+                    "Given pon={:.3f}, a RE is found. poffs: {:.3f}, poff: {:.3f}.".format(pon, poffs, store_price))
                 # Given pon, if we find a RE in the current poffs, compare it with optimal RE collected in other poffs.
                 potential_RE_profit_givenpon = cal_profit(pon=pon, cr=cr, alpha_o=alpha_o,
                                                           store_profit=store_profit)
 
                 logger.info("store profit:{:.5f}, "
-                            "alpha_o:{:.5f}, alpha_s:{:.5f}, total profit: {:.5f}, scenario: {}".format(
+                            "alpha_o:{:.3f}, alpha_s:{:.3f}, total profit: {:.6f}, scenario: {}".format(
                     store_profit, alpha_o, alpha_s, potential_RE_profit_givenpon, current_scenario))
-                if RE_profit_givenpon < potential_RE_profit_givenpon:
+                if myround(RE_profit_givenpon - potential_RE_profit_givenpon) < 0:
                     RE_profit_givenpon = potential_RE_profit_givenpon
                     poffs_givenpon = store_price
                     poffstar_givenpon = store_price
             else:
                 continue
 
-        if optimal_total_profit < RE_profit_givenpon:
+        if myround(optimal_total_profit-RE_profit_givenpon) < 0:
             optimal_total_profit = RE_profit_givenpon
             optimal_poff = poffstar_givenpon
             optimal_poffs = poffs_givenpon
             optimal_pon = pon
 
     if optimal_pon:
-        logger.info("ponstar: {}, poffs:{}, poffstar:{}, profit:{}".format(
+        logger.info("ponstar: {:.3f}, poffs:{:.3f}, poffstar:{:.3f}, profit:{:.5f}".format(
             optimal_pon, optimal_poffs, optimal_poff, optimal_total_profit))
     else:
         logger.info("No RE is found.")
@@ -92,4 +96,4 @@ def solve_equilibrium(c, cr, con):
 
 
 if __name__ == "__main__":
-    solve_equilibrium(c=0.17, cr=0.2, con=0.05)
+    solve_equilibrium(c=0., cr=0.35, con=0.1)
