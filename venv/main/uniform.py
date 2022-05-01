@@ -9,6 +9,10 @@ import numpy as np
 from tools_uniform import *
 import logging
 
+logging.basicConfig()
+logger = logging.getLogger("uniform")
+logger.setLevel(logging.INFO)
+
 
 def solve_equilibrium(c, cr, con):
     optimal_total_profit = 0
@@ -22,8 +26,9 @@ def solve_equilibrium(c, cr, con):
         if optimal_total_profit < current_profit:
             optimal_total_profit = current_profit
             optimal_p = p
-    logging.info("optimal price: {:.5f}, profit: {:.5f}".format(optimal_p, optimal_total_profit))
+    logger.info("optimal price: {:.5f}, profit: {:.5f}".format(optimal_p, optimal_total_profit))
     return optimal_p, optimal_total_profit
 
 
-solve_equilibrium(c=0.1, cr=0.1, con=0.2)
+if __name__ == "__main__":
+    solve_equilibrium(c=0.25, cr=0.1, con=0.2)

@@ -6,7 +6,6 @@
 @Desc:
 """
 import numpy as np
-import logging
 
 EPSILON = 0.000001
 
@@ -46,7 +45,7 @@ def scenario_check(pon, poffs, c, con):
     elif 1 / 2 * pon + 2 * c >= poffs >= 1 - 2 * c and 1 / 2 * poffs - 3 / 4 * pon + c <= 0:
         return 14
     else:
-        logging.error("pon: {}, poffs: {}, c: {}, con: {}".format(pon, poffs, c, con))
+        print("pon: {}, poffs: {}, c: {}, con: {}".format(pon, poffs, c, con))
         raise Exception("Unidentified scenario")
 
 
@@ -58,7 +57,7 @@ def calculate_prior_demand(pon, poffs, c, con, scenario):
         alpha_s = alpha_so_prior + alpha_ss_prior
         alpha_l = 1 - alpha_o - alpha_s
     elif scenario == 2:
-        if con > 2 * c - 1 / 2:
+        if con > 2 * c - 1 / 2 * pon:
             alpha_o = 1 / (2 * con) * (2 - 2 * pon - 4 * c) * (2 * c - 1 / 2 * pon)
             alpha_so_prior = 1 / (2 * con) * (2 - con - 3 / 2 * pon - 6 * c) * (con + 1 / 2 * pon - 2 * c)
         else:
