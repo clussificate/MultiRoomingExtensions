@@ -14,12 +14,12 @@ logger.setLevel(logging.INFO)
 EPSILON = 0.000001
 
 
-def solve_equilibrium(c, cr, con):
+def solve_equilibrium(c, cr, con, step=0.01):
     optimal_total_profit = 0  # the RE that maximizes total profit for any pon.
     optimal_poffs = 0
     optimal_poff = 0
     optimal_pon = 0
-    for pon in np.arange(0, 1, 0.01):
+    for pon in np.arange(0, 1, step):
         logger.debug("-------------------------")
         # given pon, find the RE that maximizes total profit given pon from all potential REs.
         RE_profit_givenpon = 0  # the RE that maximizes total profit given pon.
@@ -27,7 +27,7 @@ def solve_equilibrium(c, cr, con):
         poffstar_givenpon = 0  # the RE that maximizes total profit given pon.
 
         # star to find REs
-        for poffs in np.arange(0, 1, 0.01):
+        for poffs in np.arange(0, 1, step):
             current_scenario = scenario_check(pon=pon, poffs=poffs, c=c, con=con)
             if current_scenario:  # print("current poffs: {}".format(poffs))
                 alpha_o, alpha_s, alpha_l = calculate_prior_demand(pon=pon, poffs=poffs, c=c,
@@ -60,7 +60,7 @@ def solve_equilibrium(c, cr, con):
 
             # if prior store demand > 0, start to find a RE
             RE_found, store_profit, store_price = FindRationalExpectations(pon=pon, poffs=poffs, c=c, con=con,
-                                                                           alpha_s=alpha_s)
+                                                                           alpha_s=alpha_s, step=step)
             # print("store_price:{}".format(store_price))
 
             if RE_found:
@@ -96,4 +96,4 @@ def solve_equilibrium(c, cr, con):
 
 
 if __name__ == "__main__":
-    solve_equilibrium(c=0., cr=0.35, con=0.1)
+    solve_equilibrium(c=0.24, cr=0.3, con=0.1)

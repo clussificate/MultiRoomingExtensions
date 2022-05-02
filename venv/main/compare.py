@@ -28,11 +28,11 @@ if __name__ == "__main__":
     cr = 0.3
     con = 0.1
     res_cnt = 0
-    for c in np.arange(0, 0.16, 0.005):
-
+    step = 0.01
+    for c in np.arange(0.2, 0.25, 0.005):
         logger.debug("----------current c: {:.3f}---------".format(c))
-        p, uniform_profit = uniform.solve_equilibrium(c=c, cr=cr, con=con)
-        pon, poffs, poff, dual_profit = dual.solve_equilibrium(c=c, cr=cr, con=con)
+        p, uniform_profit = uniform.solve_equilibrium(c=c, cr=cr, con=con, step=step)
+        pon, poffs, poff, dual_profit = dual.solve_equilibrium(c=c, cr=cr, con=con, step=step)
         logger.debug("Uniform price: {:.3f}, uniform profit: {:.5f}".format(p, uniform_profit))
         logger.debug("online price: {:.3f}, store price: {:.3f}, dual profit: {:.5f}".format(
             pon, poff, dual_profit))

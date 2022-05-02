@@ -14,10 +14,10 @@ logger = logging.getLogger("uniform")
 logger.setLevel(logging.INFO)
 
 
-def solve_equilibrium(c, cr, con):
+def solve_equilibrium(c, cr, con, step=0.01):
     optimal_total_profit = 0
     optimal_p = 0
-    for p in np.arange(0, 1, 0.01):
+    for p in np.arange(0, 1, step):
         current_scenario = scenario_check(c=c, con=con, p=p)
         alpha_o, alpha_s = calculate_demand(p=p, c=c, con=con, scenario=current_scenario)
 
@@ -32,7 +32,7 @@ def solve_equilibrium(c, cr, con):
 
 
 if __name__ == "__main__":
-    solve_equilibrium(c=0.12, cr=0.35, con=0.05)
+    solve_equilibrium(c=0.24, cr=0.3, con=0.1)
     # cr = 0.3
     # con = 0.05
     # for c in np.arange(0.05, 0.2, 0.01):

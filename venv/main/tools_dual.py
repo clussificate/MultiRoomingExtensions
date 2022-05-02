@@ -81,16 +81,36 @@ def calculate_prior_demand(pon, poffs, c, con, scenario):
         alpha_ss_prior = 0
     elif scenario == 6:
         alpha_ss_prior = 0
-        if con >= 1 - pon - 2 * c:
-            alpha_o = 1 / (2 * con) * (2 - min(1, 1 / 2 * pon + 4 * c, 3 / 2 * pon) - min(1, 1 / 2 * pon + 4 * c)) * (
-                min(2 * c - 1 / 2 * pon, 1 / 2 * (1 - 3 / 2 * pon)))
-            alpha_so_prior = 1 / (2 * con) * (1 - min(1 / 2 * pon + 4 * c, 1)) * (1 - 1 / 2 * pon - 4 * c)
-        elif 1 - pon * 2 * c > con >= 2 * c - 1 / 2 * pon:
-            alpha_o = 1 / (2 * con) * (2 - 2 * pon - 4 * c) * (2 * c - 1 / 2 * pon)
-            alpha_so_prior = 1 / (2 * con) * (2 - 3 / 2 * pon - con - 6 * c) * (con - 2 * c + 1 / 2 * pon)
+        # assume that 1-pon-2c> 2 *c -1/2 * pon, SO can emerge.
+        if 1 - pon - 2 * c >= 2 * c - 1 / 2 * pon:
+            if con >= 1 - pon - 2 * c:
+                alpha_o = 1 / (2 * con) * \
+                          (2 - min(1, 1 / 2 * pon + 4 * c, 3 / 2 * pon) - min(1, 1 / 2 * pon + 4 * c)) * \
+                          (min(2 * c - 1 / 2 * pon, 1 / 2 * (1 - 3 / 2 * pon)))
+                alpha_so_prior = 1 / (2 * con) * (1 - min(1 / 2 * pon + 4 * c, 1)) * (1 - 1 / 2 * pon - 4 * c)
+            elif con >= 2 * c - 1 / 2 * pon:
+                alpha_o = 1 / (2 * con) * (2 - 2 * pon - 4 * c) * (2 * c - 1 / 2 * pon)
+                alpha_so_prior = 1 / (2 * con) * (2 - 3 / 2 * pon - con - 6 * c) * (con - 2 * c + 1 / 2 * pon)
+            else:
+                alpha_o = 1 / (2 * con) * con * (
+                        2 - min(1, 2 * con + 3 / 2 * pon) - min(1, 3 / 2 * pon))
+                alpha_so_prior = 0
         else:
-            alpha_o = 1 / (2 * con) * con * (2 - min(1, 2 * con + 3 / 2 * pon) - min(1, 3 / 2 * pon))
+            # assume that 1-pon-2c < 2 *c -1/2 * pon. SO will not emerge.
             alpha_so_prior = 0
+
+        # if con >= 1 - pon - 2 * c:
+        #     alpha_o = 1 / (2 * con) * \
+        #               (2 - min(1, 1 / 2 * pon + 4 * c, 3 / 2 * pon) - min(1, 1 / 2 * pon + 4 * c)) * \
+        #               (min(2 * c - 1 / 2 * pon, 1 / 2 * (1 - 3 / 2 * pon)))
+        #     alpha_so_prior = 1 / (2 * con) * (1 - min(1 / 2 * pon + 4 * c, 1)) * (1 - 1 / 2 * pon - 4 * c)
+        # elif 1 - pon - 2 * c > con >= 2 * c - 1 / 2 * pon:
+        #     alpha_o = 1 / (2 * con) * (2 - 2 * pon - 4 * c) * (2 * c - 1 / 2 * pon)
+        #     alpha_so_prior = 1 / (2 * con) * (2 - 3 / 2 * pon - con - 6 * c) * (con - 2 * c + 1 / 2 * pon)
+        # else:
+        #     alpha_o = 1 / (2 * con) * con * (
+        #             2 - min(1, 2 * con + 3/2 * pon) - min(1, 3 / 2 * pon))
+        #     alpha_so_prior = 0
     elif scenario == 7:
         if pon >= 1 - 2 * c or poffs <= pon:
             alpha_o = 0
@@ -199,10 +219,10 @@ def cal_store_profit(pon, poff, alpha_ss, alpha_so):
     return 1 / 2 * store_profit
 
 
-def FindRationalExpectations(pon, poffs, c, con, alpha_s):
+def FindRationalExpectations(pon, poffs, c, con, alpha_s, step=0.01):
     max_store_profit = 0
     max_store_price = 0
-    for poff in np.arange(0, 1, 0.01):
+    for poff in np.arange(0, 1, step):
         alpha_ss, alpha_so = calculate_store_demand(pon=pon, poff=poff,
                                                     c=c, con=con, alpha_s=alpha_s)
         if alpha_ss > 1 or alpha_ss < 0.0 or alpha_so > 1 or alpha_so < 0.0:
