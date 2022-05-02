@@ -64,15 +64,18 @@ def solve_equilibrium(c, cr, con, step=0.01):
             # print("store_price:{}".format(store_price))
 
             if RE_found:
-                logger.info(
-                    "Given pon={:.3f}, a RE is found. poffs: {:.3f}, poff: {:.3f}.".format(pon, poffs, store_price))
-                # Given pon, if we find a RE in the current poffs, compare it with optimal RE collected in other poffs.
                 potential_RE_profit_givenpon = cal_profit(pon=pon, cr=cr, alpha_o=alpha_o,
                                                           store_profit=store_profit)
-
-                logger.info("store profit:{:.5f}, "
-                            "alpha_o:{:.3f}, alpha_s:{:.3f}, total profit: {:.6f}, scenario: {}".format(
-                    store_profit, alpha_o, alpha_s, potential_RE_profit_givenpon, current_scenario))
+                logger.info(
+                    "Given pon={:.3f}, a RE is found."
+                    " poffs: {:.3f}, poff: {:.3f}, store profit:{:.5f}, alpha_o:{:.3f}, alpha_s:{:.3f}, "
+                    "total profit: {:.6f}, scenario: {}".format(
+                        pon, poffs, store_price, store_profit, alpha_o, alpha_s, potential_RE_profit_givenpon,
+                        current_scenario))
+                # Given pon, if we find a RE in the current poffs, compare it with optimal RE collected in other poffs.
+                # logger.info("store profit:{:.5f}, "
+                #             "alpha_o:{:.3f}, alpha_s:{:.3f}, total profit: {:.6f}, scenario: {}".format(
+                #     store_profit, alpha_o, alpha_s, potential_RE_profit_givenpon, current_scenario))
                 if myround(RE_profit_givenpon - potential_RE_profit_givenpon) < 0:
                     RE_profit_givenpon = potential_RE_profit_givenpon
                     poffs_givenpon = store_price
@@ -80,7 +83,7 @@ def solve_equilibrium(c, cr, con, step=0.01):
             else:
                 continue
 
-        if myround(optimal_total_profit-RE_profit_givenpon) < 0:
+        if myround(optimal_total_profit - RE_profit_givenpon) < 0:
             optimal_total_profit = RE_profit_givenpon
             optimal_poff = poffstar_givenpon
             optimal_poffs = poffs_givenpon
@@ -96,4 +99,4 @@ def solve_equilibrium(c, cr, con, step=0.01):
 
 
 if __name__ == "__main__":
-    solve_equilibrium(c=0.24, cr=0.3, con=0.1)
+    solve_equilibrium(c=0.15, cr=0.3, con=0.1, step=0.005)

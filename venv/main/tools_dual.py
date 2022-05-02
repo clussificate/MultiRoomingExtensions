@@ -34,7 +34,7 @@ def scenario_check(pon, poffs, c, con):
         return 8
     elif 1 / 2 * pon + 2 * c >= poffs and poffs < 1 - 2 * c and 0 < 1 / 2 * poffs - 3 / 4 * pon + c < con:
         return 9
-    elif 1 / 2 * pon + 2 * c >= poffs and poffs < 1 - 2 * c and con <= 1 / 2 * poffs - 3 / 4 * pon + c:
+    elif 1 / 2 * pon + 2 * c >= poffs and poffs < 1 - 2 * c and 1 / 2 * poffs - 3 / 4 * pon + c >= con:
         return 10
     elif 1 / 2 * pon + 2 * c >= poffs and poffs < 1 - 2 * c and 1 / 2 * poffs - 3 / 4 * pon + c <= 0:
         return 11
@@ -84,22 +84,25 @@ def calculate_prior_demand(pon, poffs, c, con, scenario):
         # assume that 1-pon-2c> 2 *c -1/2 * pon, SO can emerge.
         if 1 - pon - 2 * c >= 2 * c - 1 / 2 * pon:
             if con >= 1 - pon - 2 * c:
-                alpha_o = 1 / (2 * con) * \
-                          (2 - min(1, 1 / 2 * pon + 4 * c, 3 / 2 * pon) - min(1, 1 / 2 * pon + 4 * c)) * \
-                          (min(2 * c - 1 / 2 * pon, 1 / 2 * (1 - 3 / 2 * pon)))
-                alpha_so_prior = 1 / (2 * con) * (1 - min(1 / 2 * pon + 4 * c, 1)) * (1 - 1 / 2 * pon - 4 * c)
+                alpha_o = 1 / (2 * con) * (2 - 2 * pon - 4 * c) * (2 * c - 1 / 2 * pon)
+                alpha_so_prior = 1 / (2 * con) * (1 - 1 / 2 * pon - 4 * c) * (1 - 1 / 2 * pon - 4 * c)
             elif con >= 2 * c - 1 / 2 * pon:
                 alpha_o = 1 / (2 * con) * (2 - 2 * pon - 4 * c) * (2 * c - 1 / 2 * pon)
-                alpha_so_prior = 1 / (2 * con) * (2 - 3 / 2 * pon - con - 6 * c) * (con - 2 * c + 1 / 2 * pon)
+                alpha_so_prior = 1 / (2 * con) * (2 - 3 / 2 * pon - 6 * c - con) * (con - 2 * c + 1 / 2 * pon)
             else:
-                alpha_o = 1 / (2 * con) * con * (
-                        2 - min(1, 2 * con + 3 / 2 * pon) - min(1, 3 / 2 * pon))
+                alpha_o = 1 / (2 * con) * con * (2 - 3 * pon - 2 * con)
                 alpha_so_prior = 0
         else:
             # assume that 1-pon-2c < 2 *c -1/2 * pon. SO will not emerge.
             alpha_so_prior = 0
-
-        # if con >= 1 - pon - 2 * c:
+            if pon >= 2 / 3:
+                alpha_o = 0
+            else:
+                if con > 1 / 2 * (1 - 3 / 2 * pon):
+                    alpha_o = 1 / (2 * con) * (1 - 3 / 2 * pon) * 1 / 2 * (1 - 3 / 2 * pon)
+                else:
+                    alpha_o = 1 / (2 * con) * con * (2 - 2 * con - 3 * pon)
+                    # if con >= 1 - pon - 2 * c:
         #     alpha_o = 1 / (2 * con) * \
         #               (2 - min(1, 1 / 2 * pon + 4 * c, 3 / 2 * pon) - min(1, 1 / 2 * pon + 4 * c)) * \
         #               (min(2 * c - 1 / 2 * pon, 1 / 2 * (1 - 3 / 2 * pon)))

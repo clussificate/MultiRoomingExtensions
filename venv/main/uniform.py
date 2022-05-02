@@ -24,6 +24,7 @@ def solve_equilibrium(c, cr, con, step=0.01):
         current_profit = calculate_profit(cr=cr, p=p, alpha_o=alpha_o, alpha_s=alpha_s)
         logger.info("current p: {:.3f}, scenario: {}, alpha_s:{:.3f}, alpha_o:{:.3f}, profit: {:.5f}".format(
             p, current_scenario, alpha_s, alpha_o, current_profit))
+
         if myround(optimal_total_profit-current_profit) < 0:
             optimal_total_profit = current_profit
             optimal_p = p
@@ -32,7 +33,7 @@ def solve_equilibrium(c, cr, con, step=0.01):
 
 
 if __name__ == "__main__":
-    solve_equilibrium(c=0.24, cr=0.3, con=0.1)
+    solve_equilibrium(c=0.15, cr=0.3, con=0.1, step=0.005)
     # cr = 0.3
     # con = 0.05
     # for c in np.arange(0.05, 0.2, 0.01):

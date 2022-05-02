@@ -25,11 +25,11 @@ if __name__ == "__main__":
     logging.basicConfig()
     logger = logging.getLogger("compare")
     logger.setLevel(logging.DEBUG)
-    cr = 0.3
+    cr = 0.32
     con = 0.1
     res_cnt = 0
-    step = 0.01
-    for c in np.arange(0.2, 0.25, 0.005):
+    step = 0.005
+    for c in np.arange(0.16, 0.20, 0.01):
         logger.debug("----------current c: {:.3f}---------".format(c))
         p, uniform_profit = uniform.solve_equilibrium(c=c, cr=cr, con=con, step=step)
         pon, poffs, poff, dual_profit = dual.solve_equilibrium(c=c, cr=cr, con=con, step=step)

@@ -48,12 +48,21 @@ def calculate_demand(p, c, con, scenario):
             alpha_o = 1 / (2 * con) * (1 - 3 / 2 * p) * (1 / 2 - 3 / 4 * p)
         else:
             alpha_o = 1 / (2 * con) * con * (2 - 3 * p - 2 * con)
-    return myround(alpha_o), myround(alpha_s)
+
+    alpha_o = myround(alpha_o)
+    alpha_s = myround(alpha_s)
+    if 0 <= alpha_o <= 1 and 0 <= alpha_s <= 1:
+        return alpha_o, alpha_s
+    else:
+        print("c: {}, con:{}, p: {:.3f}, scenario: {}".format(
+            c, con, p, scenario))
+        print("alpha_so:{:.5f}, alpha_ss: {:.5f}".format(alpha_o, alpha_s))
+        raise Exception("error prior demand!")
 
 
 def calculate_profit(cr, p, alpha_o, alpha_s):
     online_profit = alpha_o * (
-                1 / 2 * p + 1 / 2 * (1 / 2 * p - 1 / 2 * cr))  # w.p. 1/2, b=b_H. Then w.p. 1/2 consumer returns it.
+            1 / 2 * p + 1 / 2 * (1 / 2 * p - 1 / 2 * cr))  # w.p. 1/2, b=b_H. Then w.p. 1/2 consumer returns it.
     store_profit = alpha_s * 1 / 2 * p  # w.p. 1/2, b=b_H
     profit = 1 / 2 * store_profit + 1 / 2 * online_profit  # w.p. 1/2, a=a_H
     return profit
