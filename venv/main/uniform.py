@@ -14,26 +14,35 @@ logger = logging.getLogger("uniform")
 logger.setLevel(logging.INFO)
 
 
-def solve_equilibrium(c, cr, con, step=0.01):
-    optimal_total_profit = 0
-    optimal_p = 0
-    for p in np.arange(0, 1, step):
-        current_scenario = scenario_check(c=c, con=con, p=p)
-        alpha_o, alpha_s = calculate_demand(p=p, c=c, con=con, scenario=current_scenario)
+class uniform:
+    def __init__(self, c, cr, con, step=0.01):
+        self.optimal_profit = 0
+        self.optimal_p = 0
+        self.alpha_o = 0
+        self.alpha_s = 0
 
-        current_profit = calculate_profit(cr=cr, p=p, alpha_o=alpha_o, alpha_s=alpha_s)
-        logger.info("current p: {:.3f}, scenario: {}, alpha_s:{:.3f}, alpha_o:{:.3f}, profit: {:.5f}".format(
-            p, current_scenario, alpha_s, alpha_o, current_profit))
+        self.solve_equilibrium(c, cr, con, step)
 
-        if myround(optimal_total_profit-current_profit) < 0:
-            optimal_total_profit = current_profit
-            optimal_p = p
-    logger.info("optimal price: {:.5f}, profit: {:.5f}".format(optimal_p, optimal_total_profit))
-    return optimal_p, optimal_total_profit
+    def solve_equilibrium(self, c, cr, con, step=0.01):
+        for p in np.arange(0, 1, step):
+            current_scenario = scenario_check(c=c, con=con, p=p)
+            alpha_o, alpha_s = calculate_demand(p=p, c=c, con=con, scenario=current_scenario)
+
+            current_profit = calculate_profit(cr=cr, p=p, alpha_o=alpha_o, alpha_s=alpha_s)
+            logger.info("current p: {:.3f}, scenario: {}, alpha_s: {:.3f}, alpha_o: {:.3f}, profit: {:.5f}".format(
+                p, current_scenario, alpha_s, alpha_o, current_profit))
+
+            if myround(self.optimal_profit - current_profit) < 0:
+                self.optimal_profit = current_profit
+                self.optimal_p = p
+                self.alpha_o = alpha_o
+                self.alpha_s = alpha_s
+        logger.info("optimal price: {:.5f}, profit: {:.5f}".format(self.optimal_p, self.optimal_profit))
+        logger.info("online demand: {:.3f}, offline demand: {:.5f}".format(self.alpha_o, self.alpha_s))
 
 
 if __name__ == "__main__":
-    solve_equilibrium(c=0.15, cr=0.3, con=0.1, step=0.005)
+    uniform(c=0.15, cr=0.3, con=0.1, step=0.005)
     # cr = 0.3
     # con = 0.05
     # for c in np.arange(0.05, 0.2, 0.01):
