@@ -4,6 +4,8 @@
 @Author: Kurt
 @file:dual.py
 @Desc:
+TODO: we may need to rewrite the file if we use simulation method.
+
 """
 from tools_dual import *
 import logging
@@ -29,6 +31,8 @@ class dual:
         if simulate:
             self.consumers = np.round([(x, y) for x in np.linspace(0, 1 * con, density)
                                        for y in np.linspace(0, 1, density)], 3)
+        else:
+            self.consumers = None
         # start to solve the problem
         self.solve_equilibrium(c, cr, con, step, simulate)
 
@@ -84,7 +88,8 @@ class dual:
 
                 # if prior store demand > 0, start to find a RE
                 RE_found, store_profit, store_price, store_demand_online, store_demand_offline = \
-                    FindRationalExpectations(pon=pon, poffs=poffs, con=con, alpha_s=alpha_s, step=step)
+                    FindRationalExpectations(pon=pon, poffs=poffs, con=con, alpha_s=alpha_s,
+                                             step=step, simulate=simulate, consumers=self.consumers)
                 # print("store_price:{}".format(store_price))
 
                 if RE_found:

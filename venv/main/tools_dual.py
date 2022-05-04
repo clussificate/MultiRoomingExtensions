@@ -248,7 +248,7 @@ def func_store(all_consumers, pon, poff):
             for consumer in all_consumers]
 
 
-def simulate_store_demand(pon, poff, c, consumers, alpha_s, density=200):
+def simulate_store_demand(pon, poff, consumers, alpha_s, density=200):
     # a consumer is denoted by [con, theta]
 
     # parallelization
@@ -256,7 +256,7 @@ def simulate_store_demand(pon, poff, c, consumers, alpha_s, density=200):
     consumers_seg = np.array_split(consumers, core_num)
     result_ids = []
     for i in range(core_num):
-        result_ids.append(func_store.remote(consumers_seg[i], c=c, pon=pon, poffs=poff))
+        result_ids.append(func_store.remote(consumers_seg[i], pon=pon, poffs=poff))
 
     behaviors = ray.get(result_ids)
     behaviors = [item for sublist in behaviors for item in sublist]
@@ -315,14 +315,18 @@ def cal_store_profit(pon, poff, alpha_ss, alpha_so):
     return 1 / 2 * store_profit  # w.p 1/2, we have b=b_H
 
 
-def FindRationalExpectations(pon, poffs, con, alpha_s, step=0.01):
+def FindRationalExpectations(pon, poffs, con, alpha_s, step=0.01, simulate=False, consumers=None):
     max_store_profit = 0
     max_store_price = 0
     max_store_demand_online = 0
     max_store_demand_offline = 0
     for poff in np.arange(0, 1, step):
-        alpha_ss, alpha_so = calculate_store_demand(pon=pon, poff=poff,
-                                                    con=con, alpha_s=alpha_s)
+        if simulate:
+            alpha_ss, alpha_so = calculate_store_demand(pon=pon, poff=poff,
+                                                        con=con, alpha_s=alpha_s)
+        else:
+            alpha_ss, alpha_so = simulate_store_demand(pon=pon, poff=poff,
+                                                       consumers=consumers, alpha_s=alpha_s, density=200)
         if alpha_ss > 1 or alpha_ss < 0.0 or alpha_so > 1 or alpha_so < 0.0:
             print("poffs: {:.3f}, poff: {:.3f},ss: {:.3f},so: {:.3f}".format(
                 poffs, poff, alpha_ss, alpha_so))
