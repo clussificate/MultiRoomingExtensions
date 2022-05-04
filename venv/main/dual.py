@@ -15,7 +15,7 @@ EPSILON = 0.000001
 
 
 class dual:
-    def __init__(self, c, cr, con, step):
+    def __init__(self, c, cr, con, step, simulate=False, density=200):
         self.optimal_profit = 0
         self.optimal_pon = 0
         self.optimal_poff = 0
@@ -25,11 +25,13 @@ class dual:
         self.alpha_o = 0  # true direct online demand
         self.alpha_so = 0  # true showrooming demand
         self.alpha_ss = 0  # true offline demand
-
+        if simulate:
+            self.consumers = np.round([(x, y) for x in np.linspace(0, 1 * con, density)
+                                       for y in np.linspace(0, 1, density)], 3)
         # start to solve the problem
-        self.solve_equilibrium(c, cr, con, step)
+        self.solve_equilibrium(c, cr, con, step, simulate)
 
-    def solve_equilibrium(self, c, cr, con, step):
+    def solve_equilibrium(self, c, cr, con, step, simulate=False):
         for pon in np.arange(0, 1, step):
             logger.debug("-------------------------")
             # given pon, find the RE that maximizes total profit given pon from all potential REs.
@@ -45,8 +47,17 @@ class dual:
             # star to find REs
             for poffs in np.arange(0, 1, step):
                 current_scenario = scenario_check(pon=pon, poffs=poffs, c=c, con=con)
-                alpha_o, alpha_s, alpha_l = calculate_prior_demand(pon=pon, poffs=poffs, c=c,
-                                                                   con=con, scenario=current_scenario)
+                # alpha_o, alpha_s, alpha_l = calculate_prior_demand(pon=pon, poffs=poffs, c=c,
+                #                                                    con=con, scenario=current_scenario)
+                if simulate:
+                    current_scenario = "simulated consumers"
+                    alpha_o, alpha_s, alpha_l = simulate_prior_demand(pon=pon, poffs=poffs, c=c,
+                                                                      consumers=self.consumers)
+                else:
+                    current_scenario = scenario_check(pon=pon, poffs=poffs, c=c, con=con)
+                    alpha_o, alpha_s, alpha_l = calculate_prior_demand(pon=pon, poffs=poffs, c=c,
+                                                                       con=con, scenario=current_scenario)
+
                 if alpha_o > 1 or alpha_o < 0 or alpha_s > 1 or alpha_s < 0:
                     logger.error("c: {}, con:{}, pon: {:.3f}, poffs: {:.3f}, scenario: {}".format(
                         c, con, pon, poffs, current_scenario))
@@ -59,10 +70,6 @@ class dual:
                     logger.debug("Current poffs causes zero store demand, and online profit: {:.5f}".format(
                         RE_profit_givenpon_zero_store_demand))
                     if myround(RE_profit_givenpon - RE_profit_givenpon_zero_store_demand) < 0:
-                        # if pon == 0.37:
-                        #     logger.info("current zero-store-demand profit: {:.8f}, "
-                        #                  "optimal zero-store-demand profit: {:.8f}".format(
-                        #         RE_profit_givenpon_zero_store_`demand, RE_profit_givenpon))
                         RE_profit_givenpon = RE_profit_givenpon_zero_store_demand
                         poffs_givenpon = poffs
                         poffstar_givenpon = poffs
@@ -92,9 +99,6 @@ class dual:
                             pon, poffs, store_price, store_profit, alpha_o, alpha_s, potential_RE_profit_givenpon,
                             current_scenario))
                     # Given pon, if we find a RE in the current poffs, compare it with optimal RE collected in other
-                    # poffs. logger.info("store profit:{:.5f}, " "alpha_o:{:.3f}, alpha_s:{:.3f}, total profit: {
-                    # :.6f}, scenario: {}".format( store_profit, alpha_o, alpha_s, potential_RE_profit_givenpon,
-                    # current_scenario))
                     if myround(RE_profit_givenpon - potential_RE_profit_givenpon) < 0:
                         RE_profit_givenpon = potential_RE_profit_givenpon
                         poffs_givenpon = store_price
@@ -129,4 +133,4 @@ class dual:
 
 
 if __name__ == "__main__":
-    dual = dual(c=0.05, cr=0.1, con=0.2, step=0.01)
+    dual(c=0.13, cr=0.32, con=0.1, step=0.01)

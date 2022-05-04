@@ -6,6 +6,8 @@
 @Desc:
 """
 import numpy as np
+from collections import Counter
+from functools import partial
 
 EPSILON = 0.000001
 
@@ -47,6 +49,46 @@ def scenario_check(pon, poffs, c, con):
     else:
         print("pon: {}, poffs: {}, c: {}, con: {}".format(pon, poffs, c, con))
         raise Exception("Unidentified scenario")
+
+
+def prior_utility_compare(loc, c, pon, poffs):
+    # derive utility for consumer located at [con, theta]
+    u_o = 1 / 2 * (loc[1] - pon) - 1 / 4 * pon - loc[0]
+    u_ss = 1 / 2 * (loc[1] - poffs) - c
+    u_so = 1 / 2 * (loc[1] - pon - loc[0]) - c
+    u_l = 0
+    if myround(u_o - max(u_ss, u_so, u_l)) >= 0:
+        return "o"
+    elif myround(u_ss - max(u_so, u_l)) >= 0:
+        return "ss"
+    elif myround(u_so - u_l) >= 0:
+        return "so"
+    else:
+        return "l"
+
+
+# def diff(loc, c, pon, poffs):
+#     # derive utility for consumer located at [con, theta]
+#     u_o = 1 / 2 * (loc[1] - pon) - 1 / 4 * pon - loc[0]
+#     u_ss = 1 / 2 * (loc[1] - poffs) - c
+#     return u_o - u_ss
+
+
+def simulate_prior_demand(pon, poffs, c, consumers, density=200):
+    # a consumer is denoted by [con, theta]
+    map_func = partial(prior_utility_compare, c=c, pon=pon, poffs=poffs)
+    behaviors = map(map_func, consumers)
+
+    count = Counter(behaviors)
+    alpha_o = count['o'] / (density ** 2)
+    alpha_so = count['so'] / (density ** 2)
+    alpha_ss = count['ss'] / (density ** 2)
+    alpha_s = alpha_so + alpha_ss
+    alpha_l = count['l'] / (density ** 2)
+
+    if alpha_s < 0.0001:  # if
+        alpha_s = 0
+    return alpha_o, alpha_s, alpha_l
 
 
 def calculate_prior_demand(pon, poffs, c, con, scenario):
@@ -166,6 +208,16 @@ def calculate_prior_demand(pon, poffs, c, con, scenario):
     alpha_l = myround(alpha_l)
 
     return alpha_o, alpha_s, alpha_l
+
+
+def store_utility_compare():
+    """TODO"""
+    return
+
+
+def simulate_store_demand():
+    """TODO"""
+    return
 
 
 def calculate_store_demand(pon, poff, con, alpha_s):
