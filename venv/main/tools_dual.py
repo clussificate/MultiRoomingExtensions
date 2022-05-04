@@ -8,6 +8,7 @@
 import numpy as np
 from collections import Counter
 from functools import partial
+import ray
 
 EPSILON = 0.000001
 
@@ -73,18 +74,35 @@ def prior_utility_compare(loc, c, pon, poffs):
 #     u_ss = 1 / 2 * (loc[1] - poffs) - c
 #     return u_o - u_ss
 
+@ray.remote
+def func(all_consumers, c, pon, poffs):
+    return [prior_utility_compare(consumer, c, pon, poffs)
+            for consumer in all_consumers]
+
 
 def simulate_prior_demand(pon, poffs, c, consumers, density=200):
     # a consumer is denoted by [con, theta]
-    map_func = partial(prior_utility_compare, c=c, pon=pon, poffs=poffs)
-    behaviors = map(map_func, consumers)
+
+    # parallelization
+    core_num = 4
+    consumers_seg = np.array_split(consumers, core_num)
+    result_ids = []
+    for i in range(core_num):
+        result_ids.append(func.remote(consumers_seg[i], c=c, pon=pon, poffs=poffs))
+
+    behaviors = ray.get(result_ids)
+    behaviors = [item for sublist in behaviors for item in sublist]
+
+    # # serial
+    # map_func = partial(prior_utility_compare, c=c, pon=pon, poffs=poffs)
+    # behaviors = map(map_func, consumers)
 
     count = Counter(behaviors)
-    alpha_o = count['o'] / (density ** 2)
+    alpha_o = myround(count['o'] / (density ** 2))
     alpha_so = count['so'] / (density ** 2)
     alpha_ss = count['ss'] / (density ** 2)
-    alpha_s = alpha_so + alpha_ss
-    alpha_l = count['l'] / (density ** 2)
+    alpha_s = myround(alpha_so + alpha_ss)
+    alpha_l = myround(count['l'] / (density ** 2))
 
     if alpha_s < 0.0001:  # if
         alpha_s = 0
@@ -210,14 +228,49 @@ def calculate_prior_demand(pon, poffs, c, con, scenario):
     return alpha_o, alpha_s, alpha_l
 
 
-def store_utility_compare():
-    """TODO"""
-    return
+def store_utility_compare(loc, pon, poff):
+    # a consumer located at [con, theta]. The offline shopping cost c is sunk
+    u_ss = 1 / 2 * (loc[1] - poff)
+    u_so = 1 / 2 * (loc[1] - pon - loc[0])
+    u_l = 0
+
+    if myround(u_ss - max(u_so, u_l)) >= 0:
+        return "ss"
+    elif myround(u_so - u_l) >= 0:
+        return "so"
+    else:
+        return "l"
 
 
-def simulate_store_demand():
-    """TODO"""
-    return
+@ray.remote
+def func_store(all_consumers, pon, poff):
+    return [store_utility_compare(loc=consumer, pon=pon, poff=poff)
+            for consumer in all_consumers]
+
+
+def simulate_store_demand(pon, poff, c, consumers, alpha_s, density=200):
+    # a consumer is denoted by [con, theta]
+
+    # parallelization
+    core_num = 4
+    consumers_seg = np.array_split(consumers, core_num)
+    result_ids = []
+    for i in range(core_num):
+        result_ids.append(func_store.remote(consumers_seg[i], c=c, pon=pon, poffs=poff))
+
+    behaviors = ray.get(result_ids)
+    behaviors = [item for sublist in behaviors for item in sublist]
+
+    # # serial
+    # map_func = partial(store_utility_compare, c=c, pon=pon, poff=poff)
+    # behaviors = map(map_func, consumers)
+
+    count = Counter(behaviors)
+    alpha_so = myround(alpha_s * (count['so'] / (density ** 2)))
+    alpha_ss = myround(alpha_s * (count['ss'] / (density ** 2)))
+    # alpha_l = myround(alpha_s * (count['l'] / (density ** 2)))
+
+    return alpha_so, alpha_ss
 
 
 def calculate_store_demand(pon, poff, con, alpha_s):

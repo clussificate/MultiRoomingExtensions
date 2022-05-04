@@ -12,6 +12,7 @@ logging.basicConfig()
 logger = logging.getLogger('dual')
 logger.setLevel(logging.INFO)
 EPSILON = 0.000001
+import ray
 
 
 class dual:
@@ -46,9 +47,6 @@ class dual:
 
             # star to find REs
             for poffs in np.arange(0, 1, step):
-                current_scenario = scenario_check(pon=pon, poffs=poffs, c=c, con=con)
-                # alpha_o, alpha_s, alpha_l = calculate_prior_demand(pon=pon, poffs=poffs, c=c,
-                #                                                    con=con, scenario=current_scenario)
                 if simulate:
                     current_scenario = "simulated consumers"
                     alpha_o, alpha_s, alpha_l = simulate_prior_demand(pon=pon, poffs=poffs, c=c,
@@ -133,4 +131,5 @@ class dual:
 
 
 if __name__ == "__main__":
-    dual(c=0.13, cr=0.32, con=0.1, step=0.01)
+    ray.init()
+    dual(c=0.13, cr=0.32, con=0.1, step=0.01, simulate=False)
