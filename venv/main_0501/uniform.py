@@ -15,18 +15,18 @@ logger.setLevel(logging.INFO)
 
 
 class uniform:
-    def __init__(self, c, cr, s, h, step=0.01):
+    def __init__(self, c, cr, con, step=0.01):
         self.optimal_profit = 0
         self.optimal_p = 0
         self.alpha_o = 0
         self.alpha_s = 0
 
-        self.solve_equilibrium(c, cr, s, h, step)
+        self.solve_equilibrium(c, cr, con, step)
 
-    def solve_equilibrium(self, c, cr, s, h, step=0.01):
+    def solve_equilibrium(self, c, cr, con, step=0.01):
         for p in np.arange(0, 1, step):
-            current_scenario = scenario_check(p=p, c=c, s=s, h=h)
-            alpha_o, alpha_s = calculate_demand(p=p, c=c, s=s, h=h, scenario=current_scenario)
+            current_scenario = scenario_check(c=c, con=con, p=p)
+            alpha_o, alpha_s = calculate_demand(p=p, c=c, con=con, scenario=current_scenario)
 
             current_profit = calculate_profit(cr=cr, p=p, alpha_o=alpha_o, alpha_s=alpha_s)
             logger.info("current p: {:.3f}, scenario: {}, alpha_s: {:.3f}, alpha_o: {:.3f}, profit: {:.5f}".format(
@@ -39,7 +39,6 @@ class uniform:
                 self.alpha_s = alpha_s
         logger.info("optimal price: {:.5f}, profit: {:.5f}".format(self.optimal_p, self.optimal_profit))
         logger.info("online demand: {:.3f}, offline demand: {:.5f}".format(self.alpha_o, self.alpha_s))
-
 
 
 if __name__ == "__main__":

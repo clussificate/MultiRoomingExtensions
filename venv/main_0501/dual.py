@@ -18,7 +18,7 @@ EPSILON = 0.000001
 
 
 class dual:
-    def __init__(self, c, cr, s, h, step, simulate=False, density=200):
+    def __init__(self, c, cr, con, step, simulate=False, density=200):
         self.optimal_profit = 0
         self.optimal_pon = 0
         self.optimal_poff = 0
@@ -29,14 +29,14 @@ class dual:
         self.alpha_so = 0  # true showrooming demand
         self.alpha_ss = 0  # true offline demand
         if simulate:
-            self.consumers = np.round([(x, y) for x in np.linspace(0, 1 * (h-s), density)
+            self.consumers = np.round([(x, y) for x in np.linspace(0, 1 * con, density)
                                        for y in np.linspace(0, 1, density)], 3)
         else:
             self.consumers = None
         # start to solve the problem
-        self.solve_equilibrium(c, cr, s, h, step, simulate)
+        self.solve_equilibrium(c, cr, con, step, simulate)
 
-    def solve_equilibrium(self, c, cr, s, h, step, simulate=False):
+    def solve_equilibrium(self, c, cr, con, step, simulate=False):
         for pon in np.arange(0, 1, step):
             logger.debug("-------------------------")
             # given pon, find the RE that maximizes total profit given pon from all potential REs.
@@ -56,15 +56,15 @@ class dual:
                     alpha_o, alpha_s, alpha_l = simulate_prior_demand(pon=pon, poffs=poffs, c=c,
                                                                       consumers=self.consumers)
                 else:
-                    current_scenario = scenario_check(pon=pon, poffs=poffs, c=c,s=s,h=h)
+                    current_scenario = scenario_check(pon=pon, poffs=poffs, c=c, con=con)
                     alpha_o, alpha_s, alpha_l = calculate_prior_demand(pon=pon, poffs=poffs, c=c,
-                                                                       s=s,h=h, scenario=current_scenario)
+                                                                       con=con, scenario=current_scenario)
 
-#                 if alpha_o > 1 or alpha_o < 0 or alpha_s > 1 or alpha_s < 0:
-#                     logger.error("c: {}, s:{}, h:{}, pon: {:.3f}, poffs: {:.3f}, scenario: {}".format(
-#                         c, s, h, pon, poffs, current_scenario))
-#                     logger.error("ex-ante alpha_o:{:.3f}, ex-ante alpha_s: {:.3f}".format(alpha_o, alpha_s))
-#                     raise Exception("error prior demand!")
+                if alpha_o > 1 or alpha_o < 0 or alpha_s > 1 or alpha_s < 0:
+                    logger.error("c: {}, con:{}, pon: {:.3f}, poffs: {:.3f}, scenario: {}".format(
+                        c, con, pon, poffs, current_scenario))
+                    logger.error("ex-ante alpha_o:{:.3f}, ex-ante alpha_s: {:.3f}".format(alpha_o, alpha_s))
+                    raise Exception("error prior demand!")
 
                 if not alpha_s:
                     # zero prior store demand, RE exists
@@ -88,8 +88,8 @@ class dual:
 
                 # if prior store demand > 0, start to find a RE
                 RE_found, store_profit, store_price, store_demand_online, store_demand_offline = \
-                    FindRationalExpectations(c=c, s=s, h=h, pon=pon, poffs=poffs, scenario=current_scenario,step=step,
-                                             simulate=simulate, consumers=self.consumers)
+                    FindRationalExpectations(pon=pon, poffs=poffs, con=con, alpha_s=alpha_s,
+                                             step=step, simulate=simulate, consumers=self.consumers)
                 # print("store_price:{}".format(store_price))
 
                 if RE_found:
