@@ -10,6 +10,7 @@ TODO: we may need to rewrite the file if we use simulation method.
 from tools_dual import *
 import logging
 import ray
+import matplotlib.pyplot as plt
 
 logging.basicConfig()
 logger = logging.getLogger('dual')
@@ -125,4 +126,46 @@ class dual:
 
 
 if __name__ == "__main__":
-    dual(c=0.1, cr=0.32, s=0.049, h=0.051, step=0.01)
+    @ray.remote
+    def get_dual_result(c, cr, s, h, step=0.01):
+        dual_ins = dual(c=c, cr=cr, s=s, h=h, step=step)
+        return dual_ins.optimal_pon, dual_ins.optimal_poff, dual_ins.optimal_profit
+
+    result_ids = []
+    cr = 0.32
+    s = 0.049
+    h = 0.051
+    step = 0.01
+    sel_c = np.arange(0.1, 0.15, 0.005)
+
+    for c in sel_c:
+        result_ids.append(get_dual_result.remote(c=c, cr=cr, s=s, h=h, step=step))
+    results = ray.get(result_ids)
+
+    pon_list = []
+    poff_list = []
+    pid_list = []
+    for result in results:
+        pon_list.append(result[0])
+        poff_list.append(result[1])
+        pid_list.append(result[2])
+    fig = plt.figure(figsize=(5, 8))
+    ax1 = fig.add_subplot(2, 1, 1)
+    ax1.plot(sel_c, pid_list, c='red', ls='--', ms=6, marker='*', label="Dual")
+
+    ax2 = fig.add_subplot(2, 1, 2)
+    ax2.plot(sel_c, pon_list, c='blue', ls='--', ms=6, marker='o', label="Online of Dual")
+    ax2.plot(sel_c, poff_list, c='green', ls='--', ms=6, marker='D',
+             label="Offline of Dual")
+
+    ax1.axis(ymin=0.026, ymax=0.042)
+    ax2.axis(ymin=0.26, ymax=0.46)
+
+    ax1.legend(prop=dict(size=9), frameon=False)
+    ax1.set_ylabel("Profits", fontsize=16)
+    ax1.set_xlabel("c", fontsize=16)
+    ax2.legend(prop=dict(size=9), frameon=False)
+    ax2.set_ylabel("Prices", fontsize=16)
+    ax2.set_xlabel("c", fontsize=16)
+    plt.tight_layout()
+    plt.show()
