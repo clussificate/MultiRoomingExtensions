@@ -55,7 +55,7 @@ if __name__ == "__main__":
     h = 0.051
     res_cnt = 0
     step = 0.005
-    sel_c = np.arange(0.1, 0.15, 0.005)
+    sel_c = np.arange(0.1, 0.151, 0.001)
 
     results_uniform_id = []
     results_dual_id = []

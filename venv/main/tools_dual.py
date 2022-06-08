@@ -193,7 +193,7 @@ def calculate_store_demand_shape2(c, s, k, h, pon, poffs, poff):
             alpha_so = 1 / (2 * (h - s)) * (min(poff - pon, poffs - pon) - min(poff - pon, k)) * (
                     2 - min(poffs + 2 * c, poff + 2 * c) - (pon + k + 2 * c))
             +1 / (h - s) * (min(poff - pon, h) - min(poff - pon, poffs - pon)) * (1 - poffs - 2 * c)
-            alpha_ss = 1 / (h - s) * (max(h, poff - pon) - max(k, poff - pon)) * (1 - (poffs - 2 * c))
+            alpha_ss = 1 / (h - s) * (max(h, poff - pon) - max(poffs - pon, poff - pon)) * (1 - poffs - 2 * c)
             +1 / (2 * (h - s)) * (max(poff - pon, poffs - pon) - max(poff - pon, k)) * (
                     2 - (poffs + 2 * c) - max(pon + k + 2 * c, poff + 2 * c))
     else:
@@ -252,7 +252,7 @@ def store_scenario_check(c, s, h, pon, poffs, poff, scenario):
     elif scenario == 2:
         store_scenario = 3
     elif scenario == 3:
-        if myround(s - poffs + pon) > 0:
+        if myround(s - poffs + pon) >= 0:
             store_scenario = 1
         elif myround(h - poffs + pon) > 0:
             store_scenario = 2
