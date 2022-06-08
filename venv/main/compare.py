@@ -54,7 +54,7 @@ if __name__ == "__main__":
     s = 0.049
     h = 0.051
     res_cnt = 0
-    step = 0.01
+    step = 0.005
     sel_c = np.arange(0.1, 0.15, 0.005)
 
     results_uniform_id = []
@@ -77,15 +77,6 @@ if __name__ == "__main__":
         d_demand.append([result_dual[2], result_dual[3], result_dual[4]])
         pid_list.append(result_dual[5])
 
-    cols = ["c", "p_u", "on_demand_u", "off_demand_u", "pi_u",
-            "pon", "poff", "on_demand_d", "show_demand_d", "off_demand_d", "pi_d"]
-    data = np.array([sel_c, p_list, [x[0] for x in u_demand], [x[1] for x in u_demand], piu_list,
-                     pon_list, poff_list, [x[0] for x in d_demand], [x[1] for x in d_demand],
-                     [x[2] for x in d_demand], pid_list]).T
-
-    data_frame = pd.DataFrame(data=data, columns=cols)
-    data_frame.to_excel("output.xlsx", index=False)
-
     fig = plt.figure(figsize=(5, 8))
     ax1 = fig.add_subplot(2, 1, 1)
     ax1.plot(sel_c, piu_list, c='red', ls='--', ms=6, marker='*', label="Uniform")
@@ -106,3 +97,13 @@ if __name__ == "__main__":
     ax2.set_xlabel("c", fontsize=16)
     plt.tight_layout()
     plt.show()
+
+    cols = ["c", "p_u", "on_demand_u", "off_demand_u", "pi_u",
+            "pon", "poff", "on_demand_d", "show_demand_d", "off_demand_d", "pi_d"]
+    data = np.array([sel_c, p_list, [x[0] for x in u_demand], [x[1] for x in u_demand], piu_list,
+                     pon_list, poff_list, [x[0] for x in d_demand], [x[1] for x in d_demand],
+                     [x[2] for x in d_demand], pid_list]).T
+
+    data_frame = pd.DataFrame(data=data, columns=cols)
+    data_frame.to_excel("output.xlsx", index=False)
+
