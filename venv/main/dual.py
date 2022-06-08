@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 logging.basicConfig()
 logger = logging.getLogger('dual')
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
 EPSILON = 0.000001
 
 

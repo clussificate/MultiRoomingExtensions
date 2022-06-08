@@ -11,6 +11,7 @@ from uniform import uniform
 import logging
 import matplotlib.pyplot as plt
 import pandas as pd
+import ray
 
 EPSILON = 0.000001
 
@@ -20,15 +21,29 @@ def myround(num):
     return num
 
 
+@ray.remote
+def get_uniform_result(c, cr, s, h, step=0.01):
+    uniform_ins = uniform(c=c, cr=cr, s=s, h=h, step=step)
+    return uniform_ins.optimal_p, uniform_ins.alpha_o, uniform_ins.alpha_s, uniform_ins.optimal_profit
+
+
+@ray.remote
+def get_dual_result(c, cr, s, h, step=0.01):
+    dual_ins = dual(c=c, cr=cr, s=s, h=h, step=step)
+    return dual_ins.optimal_pon, dual_ins.optimal_poff, dual_ins.alpha_o, dual_ins.alpha_so, dual_ins.alpha_ss, dual_ins.optimal_profit
+
+
 if __name__ == "__main__":
     logging.getLogger('dual').setLevel(logging.ERROR)
     logging.getLogger('uniform').setLevel(logging.ERROR)
 
     logging.basicConfig()
     logger = logging.getLogger("compare")
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
+
     p_list = []
     u_demand = []
+
     piu_list = []
     pon_list = []
     poff_list = []
@@ -36,35 +51,31 @@ if __name__ == "__main__":
     pid_list = []
 
     cr = 0.32
-    con = 0.1
+    s = 0.049
+    h = 0.051
     res_cnt = 0
     step = 0.01
-    sel_c = np.arange(0.0, 0.2, 0.005)
+    sel_c = np.arange(0.1, 0.15, 0.005)
+
+    results_uniform_id = []
+    results_dual_id = []
 
     for c in sel_c:
-        logger.debug("----------current c: {:.3f}---------".format(c))
-        uniform_ins = uniform(c=c, cr=cr, con=con, step=step)
-        dual_ins = dual(c=c, cr=cr, con=con, step=step)
+        results_uniform_id.append(get_uniform_result.remote(c=c, cr=cr, s=s, h=h, step=step))
+        results_dual_id.append(get_dual_result.remote(c=c, cr=cr, s=s, h=h, step=step))
 
-        p_list.append(uniform_ins.optimal_p)
-        u_demand.append([uniform_ins.alpha_o, uniform_ins.alpha_s])
-        piu_list.append(uniform_ins.optimal_profit)
+    results_uniform = ray.get(results_uniform_id)
+    results_dual = ray.get(results_dual_id)
 
-        pon_list.append(dual_ins.optimal_pon)
-        poff_list.append(dual_ins.optimal_poff)
-        pid_list.append(dual_ins.optimal_profit)
-        d_demand.append([dual_ins.alpha_o, dual_ins.alpha_so, dual_ins.alpha_ss])
+    for result_uniform, result_dual in zip(results_uniform, results_dual):
+        p_list.append(result_uniform[0])
+        u_demand.append([result_uniform[1], result_uniform[2]])
+        piu_list.append(result_uniform[3])
 
-        logger.debug("Uniform price: {:.3f}, uniform profit: {:.5f}".format(
-            uniform_ins.optimal_p, uniform_ins.optimal_profit))
-        logger.debug("online price: {:.3f}, store price: {:.3f}, dual profit: {:.5f}".format(
-            dual_ins.optimal_pon, dual_ins.optimal_poff, dual_ins.optimal_profit))
-        if myround(uniform_ins.optimal_p - dual_ins.optimal_pon) < 0 and \
-                myround(uniform_ins.optimal_profit - dual_ins.optimal_profit) > 0:
-            res_cnt = res_cnt + 1
-            logger.info("HPLP RESULT IS FOUND....")
-    if res_cnt == 0:
-        logger.info("No HPLP RESULT....")
+        pon_list.append(result_dual[0])
+        poff_list.append(result_dual[1])
+        d_demand.append([result_dual[2], result_dual[3], result_dual[4]])
+        pid_list.append(result_dual[5])
 
     cols = ["c", "p_u", "on_demand_u", "off_demand_u", "pi_u",
             "pon", "poff", "on_demand_d", "show_demand_d", "off_demand_d", "pi_d"]

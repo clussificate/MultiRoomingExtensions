@@ -158,7 +158,7 @@ def FindRationalExpectations(c, s, h, pon, poffs, scenario, step=0.01):
         return True, max_store_profit, max_store_price, max_store_demand_online, max_store_demand_offline
 
 
-def calculate_store_demand_shape1(c,  s, k, h, pon, poffs, poff):
+def calculate_store_demand_shape1(c, s, k, h, pon, poffs, poff):
     if myround(h - (poffs - pon + 2 * c)) <= 0:
         # no instore consumer leaves with empty hand.
         alpha_so = 1 / (h - s) * (min(poff - pon, h) - min(poff - pon, k)) * (1 - poffs - 2 * c)
@@ -186,9 +186,8 @@ def calculate_store_demand_shape2(c, s, k, h, pon, poffs, poff):
             +1 / (2 * (h - s)) * (min(h, poff - pon, poffs - pon + 2 * c) - (poffs - pon + 2 * c)) * (
                     2 - min(pon + h, poff) - (poffs + 2 * c))
             alpha_ss = 1 / (h - s) * (max(h, poff - pon) - max(poff - pon, poffs - pon)) * (
-                    1 - max(poffs + 2 * c, poff))
-            +1 / (2 * (h - s)) * (max(min(poffs - pon - max(poff - pon, k)), 0)) * (
-                    2 - (poffs + 2 * c) - max(pon + k + 2 * c, poff + 2 * c))
+                    1 - max(poffs + 2 * c, poff)) + 1 / (2 * (h - s)) * (max(poffs - pon - max(poff - pon, k), 0)) * (
+                               2 - (poffs + 2 * c) - max(pon + k + 2 * c, poff + 2 * c))
         else:
             # all consumers will buy
             alpha_so = 1 / (2 * (h - s)) * (min(poff - pon, poffs - pon) - min(poff - pon, k)) * (
@@ -224,11 +223,11 @@ def calculate_store_demand(c, s, h, pon, poffs, poff, store_scenario):
     k = max(s, min(1 / 2 * poffs - 3 / 4 * pon + c, 2 * c - 1 / 2 * pon))
 
     if store_scenario == 1:
-        alpha_so, alpha_ss = calculate_store_demand_shape1(c=c,s=s, k=k, h=h, pon=pon, poffs=poffs, poff=poff)
+        alpha_so, alpha_ss = calculate_store_demand_shape1(c=c, s=s, k=k, h=h, pon=pon, poffs=poffs, poff=poff)
     elif store_scenario == 2:
-        alpha_so, alpha_ss = calculate_store_demand_shape2(c=c,s=s, k=k, h=h, pon=pon, poffs=poffs, poff=poff)
+        alpha_so, alpha_ss = calculate_store_demand_shape2(c=c, s=s, k=k, h=h, pon=pon, poffs=poffs, poff=poff)
     elif store_scenario == 3:
-        alpha_so, alpha_ss = calculate_store_demand_shape3(c=c,s=s, k=k, h=h, pon=pon, poffs=poffs, poff=poff)
+        alpha_so, alpha_ss = calculate_store_demand_shape3(c=c, s=s, k=k, h=h, pon=pon, poffs=poffs, poff=poff)
     else:
         print("c: {}, k:{}, h:{}, pon: {:.3f}, poffs: {:.3f}, store scenario: {}".format(
             c, k, h, pon, poffs, store_scenario))

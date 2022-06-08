@@ -11,7 +11,7 @@ import logging
 
 logging.basicConfig()
 logger = logging.getLogger("uniform")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
 
 
 class uniform:
