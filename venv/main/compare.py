@@ -51,11 +51,11 @@ if __name__ == "__main__":
     pid_list = []
 
     cr = 0.32
-    s = 0.049
-    h = 0.051
+    s = 0.03
+    h = 0.07
     res_cnt = 0
-    step = 0.005
-    sel_c = np.arange(0.1, 0.151, 0.001)
+    step = 0.0025
+    sel_c = np.arange(0.1, 0.171, 0.0025)
 
     results_uniform_id = []
     results_dual_id = []
@@ -95,6 +95,7 @@ if __name__ == "__main__":
     ax2.legend(prop=dict(size=9), frameon=False)
     ax2.set_ylabel("Prices", fontsize=16)
     ax2.set_xlabel("c", fontsize=16)
+
     plt.tight_layout()
     plt.show()
 
