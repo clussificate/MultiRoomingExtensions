@@ -33,7 +33,7 @@ def get_dual_result(c, cr, s, h, step=0.01):
     return dual_ins.optimal_pon, dual_ins.optimal_poff, dual_ins.alpha_o, dual_ins.alpha_so, dual_ins.alpha_ss, dual_ins.optimal_profit
 
 
-def main(xs, filenames, step=0.0025,plot=False):
+def main(xs, filenames, step=0.0025, plot=False):
     for x, filename in zip(xs, filenames):
         p_list = []
         u_demand = []
@@ -45,8 +45,8 @@ def main(xs, filenames, step=0.0025,plot=False):
         pid_list = []
 
         cr = 0.32
-        s = 0.05-x
-        h = 0.05+x
+        s = 0.05 - x
+        h = 0.05 + x
         sel_c = np.arange(0.1, 0.181, 0.0025)
 
         results_uniform_id = []
@@ -110,10 +110,12 @@ if __name__ == "__main__":
     logger = logging.getLogger("compare")
     logger.setLevel(logging.INFO)
 
-    filenames = ["output_x_1e-3.xlsx", "output_x_1e-2.xlsx", "output_x_2e-2.xlsx"]
-    xs = [0.001, 0.01, 0.02]
-    main(xs, filenames)
+    # filenames = ["output_x_1e-3.xlsx", "output_x_1e-2.xlsx", "output_x_2e-2.xlsx"]
+    # xs = [0.001, 0.01, 0.02]
+    # filenames = ["output_x_1e-3.xlsx"]
+    # xs = [0.001]
+    # main(xs, filenames)
     try:
-        main([0.04], filenames,step=0.005)
+        main([0.05], ["output_x_5e-2.xlsx"], step=0.005, plot=True)
     except:
         print("the last work has not been successfully completed.")
