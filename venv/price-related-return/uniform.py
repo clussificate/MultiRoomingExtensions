@@ -8,6 +8,8 @@
 from collections import Counter
 import numpy as np
 import logging
+import ray
+import matplotlib.pyplot as plt
 
 logging.basicConfig()
 logger = logging.getLogger("uniform")
@@ -132,10 +134,44 @@ class uniform:
         self.profit = optimal_profit
 
 
+@ray.remote
+def get_uniform_result(c, con, cr, m, step, density):
+    uniform_ins = uniform(c=c, con=con, m=m, cr=cr, step=step, density=density)
+    return uniform_ins.p, uniform_ins.profit
+
+
 if __name__ == "__main__":
-    c = 0.1
+    sel_c = np.arange(0.1, 0.15, 0.005)
     cr = 0.32
     con = 0.05
     m = 1 / 4
-    uniform_ins = uniform(c=c, con=con, cr=cr, m=m, step=0.001, density=0.001)
-    print(uniform_ins.p, uniform_ins.profit)
+
+    result_ids = []
+    for c in sel_c:
+        result_ids.append(get_uniform_result.remote(c=c, con=con, cr=cr, m=m,
+                                                    step=0.001, density=0.001))
+
+    results = ray.get(result_ids)
+    p_list = []
+    pid_list = []
+    for result in results:
+        p_list.append(result[0])
+        pid_list.append(result[1])
+    fig = plt.figure(figsize=(5, 8))
+    ax1 = fig.add_subplot(2, 1, 1)
+    ax1.plot(sel_c, pid_list, c='red', ls='--', ms=6, marker='*', label="profit")
+
+    ax2 = fig.add_subplot(2, 1, 2)
+    ax2.plot(sel_c, p_list, c='blue', ls='--', ms=6, marker='o', label="uniform price")
+
+    # ax1.axis(ymin=0.026, ymax=0.042)
+    # ax2.axis(ymin=0.26, ymax=0.46)
+
+    ax1.legend(prop=dict(size=9), frameon=False)
+    ax1.set_ylabel("Profits", fontsize=16)
+    ax1.set_xlabel("c", fontsize=16)
+    ax2.legend(prop=dict(size=9), frameon=False)
+    ax2.set_ylabel("Prices", fontsize=16)
+    ax2.set_xlabel("c", fontsize=16)
+    plt.tight_layout()
+    plt.show()
