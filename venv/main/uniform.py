@@ -41,9 +41,8 @@ class uniform:
         logger.info("online demand: {:.3f}, offline demand: {:.5f}".format(self.alpha_o, self.alpha_s))
 
 
-
 if __name__ == "__main__":
-    uniform(c=1/6, cr=0.1, con=0.1, step=0.005)
+    uniform(c=0.1, cr=0.32, s=0.49, h=0.51, step=0.005)
     # cr = 0.3
     # con = 0.05
     # for c in np.arange(0.05, 0.2, 0.01):

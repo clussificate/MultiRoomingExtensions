@@ -5,9 +5,13 @@
 @file:uniform.py
 @Desc:
 """
-import ray
 from collections import Counter
 import numpy as np
+import logging
+
+logging.basicConfig()
+logger = logging.getLogger("uniform")
+logger.setLevel(logging.DEBUG)
 
 EPSILON = 0.000001
 
@@ -17,7 +21,6 @@ def myround(num):
     return num
 
 
-@ray.remote
 def utility_tie_online(loc, c, con, m, p):
     """
     In this function, the tie is broken by assuming consumers buy online directly
@@ -37,7 +40,6 @@ def utility_tie_online(loc, c, con, m, p):
             return "l"
 
 
-@ray.remote
 def utility_tie_offline(loc, c, con, m, p):
     """
     In this function, the tie is broken by assuming consumers visit the store
@@ -57,12 +59,6 @@ def utility_tie_offline(loc, c, con, m, p):
             return "l"
 
 
-# @ray.remote
-# def get_consumer_behavior(consumers, c, con, m, p):
-#     tie_online = [utility_tie1(c=c, con=con, m=m, p=p, loc=consumer) for consumer in consumers]
-#     tie_offline = [utility_tie2(c=c, con=con, m=m, p=p, loc=consumer) for consumer in consumers]
-#     return tie_online, tie_offline
-
 def get_demand(behaviors):
     total = len(behaviors)
     count = Counter(behaviors)
@@ -78,21 +74,13 @@ def simulate_behavior(consumers, c, con, m, p):
     # if consumers are indifferent between buying online directly and visiting the store,
     # we break the tie by maximizing the retailer's profit
     if myround(1 / 2 * m * p * p - 1 / 2 * p + c - con) == 0:
-        result_id_online = []
-        result_id_offline = []
-        for consumer in consumers:
-            result_id_online.append(utility_tie_online.remote(loc=consumer, c=c, con=con, m=m, p=p))
-            result_id_offline.append(utility_tie_offline.remote(loc=consumer, c=c, con=con, m=m, p=p))
-        behaviors_tie_online = ray.get(result_id_online)
-        behaviors_tie_offline = ray.get(result_id_offline)
+        behaviors_tie_online = [utility_tie_online(loc=consumer, c=c, con=con, m=m, p=p) for consumer in consumers]
+        behaviors_tie_offline = [utility_tie_offline(loc=consumer, c=c, con=con, m=m, p=p) for consumer in consumers]
 
         return behaviors_tie_online, behaviors_tie_offline
     else:
         # if there is no tie, utility_tie_online and utility_tie_offline are equivalent.
-        result_id = []
-        for consumer in consumers:
-            result_id.append(utility_tie_online.remote(loc=consumer, c=c, con=con, m=m, p=p))
-        behaviors = ray.get(result_id)
+        behaviors = [utility_tie_online(loc=consumer, c=c, con=con, m=m, p=p) for consumer in consumers]
 
         return behaviors
 
@@ -116,12 +104,17 @@ class uniform:
         :param step: step size of price
         :param density=0.001: density of consumers
         """
+        self.p = 0
+        self.profit = 0
         self.solve(c=c, con=con, cr=cr, m=m, step=step, density=density)
 
     def solve(self, c, con, cr, m, step, density):
         consumers = np.arange(0, 1, density)
 
-        for p in range(0, 1, step):
+        optimal_profit = 0
+        optimal_price = 0
+        for p in np.arange(0, 1, step):
+            logger.debug("current loop: p={:.3f}".format(p))
             if myround(1 / 2 * m * p * p - 1 / 2 * p + c - con) == 0:
                 behaviors_tie_online, behaviors_tie_offline = simulate_behavior(consumers=consumers,
                                                                                 c=c, con=con, m=m, p=p)
@@ -132,7 +125,17 @@ class uniform:
                 behaviors = simulate_behavior(consumers=consumers, c=c, con=con, m=m, p=p)
                 profit = cal_profit(m=m, p=p, cr=cr, behaviors=behaviors)
 
+            if profit - optimal_profit > 0:
+                optimal_profit = profit
+                optimal_price = p
+        self.p = optimal_price
+        self.profit = optimal_profit
 
 
-
-        pass
+if __name__ == "__main__":
+    c = 0.1
+    cr = 0.32
+    con = 0.05
+    m = 1 / 4
+    uniform_ins = uniform(c=c, con=con, cr=cr, m=m, step=0.001, density=0.001)
+    print(uniform_ins.p, uniform_ins.profit)
