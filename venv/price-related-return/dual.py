@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 
 logging.basicConfig()
 logger = logging.getLogger("uniform")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 EPSILON = 0.000001
 
@@ -91,28 +91,33 @@ def simulate_behavior(consumers, c, con, m, pon, poff):
 
 def cal_profit(m, pon, poff, cr, behaviors):
     alpha_o, alpha_s = get_demand(behaviors)
+    logger.debug("current demand: alpha_o {:.3f}, alpha_s {:.3f}, return probability:{:.3f}".format(
+        alpha_o, alpha_s, m * pon))
     online_profit = alpha_o * (1 / 2 * pon + 1 / 2 * ((1 - m * pon) * pon - m * pon * cr))  # w.p. 1/2, b=b_H.
     store_profit = alpha_s * 1 / 2 * poff  # w.p. 1/2, b=b_H
+    logger.debug("current demand: online_profit {:.3f}, store_profit {:.3f}".format(online_profit, store_profit))
     profit = 1 / 2 * store_profit + 1 / 2 * online_profit  # w.p. 1/2, a=a_H
     return profit
 
 
 class dual:
-    def __init__(self, c, con, cr, m, step=0.001, density=0.001):
+    def __init__(self, c, con, cr, return_prop, step=0.001, density=0.001):
         self.pon = 0
         self.poff = 0
         self.profit = 0
-        self.solve(c=c, con=con, cr=cr, m=m, step=step, density=density)
+        self.solve(c=c, con=con, cr=cr, return_prop=return_prop, step=step, density=density)
 
-    def solve(self, c, con, cr, m, step, density):
+    def solve(self, c, con, cr, return_prop, step, density):
         consumers = np.arange(0, 1, density)
         optimal_profit = 0
         optimal_pon = 0
         for pon in np.arange(0.001, 1, step):
             poff = pon + con
-            if isinstance(m, str):
+            if isinstance(return_prop, str):
                 m = 1 / (2 * pon)
-            logger.debug("current loop: pon={:.3f}".format(pon))
+            else:
+                m = return_prop
+            logger.debug("current m: {:.3f}, pon: {:.3f}".format(m, pon))
             if myround(1 / 2 * m * pon * pon - pon + 1 / 2 * poff + c - con) == 0:
                 behaviors_tie_online, behaviors_tie_offline = simulate_behavior(consumers=consumers,
                                                                                 c=c, con=con, m=m, pon=pon, poff=poff)
@@ -123,17 +128,18 @@ class dual:
                 behaviors = simulate_behavior(consumers=consumers, c=c, con=con, m=m, pon=pon, poff=poff)
                 profit = cal_profit(m=m, pon=pon, poff=poff, cr=cr, behaviors=behaviors)
 
+            logger.debug("current loop: pon={:.3f}, poff={:.3f}, profit={:.3f}".format(pon, poff, profit))
             if profit - optimal_profit > 0:
                 optimal_profit = profit
                 optimal_pon = pon
         self.pon = optimal_pon
-        self.pon = optimal_pon + con
-        self.profit = optimal_pon
+        self.poff = optimal_pon + con
+        self.profit = optimal_profit
 
 
 @ray.remote
-def get_dual_result(c, con, cr, m, step, density):
-    dual_ins = dual(c=c, con=con, m=m, cr=cr, step=step, density=density)
+def get_dual_result(c, con, cr, return_prop, step, density):
+    dual_ins = dual(c=c, con=con, return_prop=return_prop, cr=cr, step=step, density=density)
     return dual_ins.pon, dual_ins.poff, dual_ins.profit
 
 
@@ -141,11 +147,13 @@ if __name__ == "__main__":
     sel_c = np.arange(0.1, 0.155, 0.005)
     cr = 0.32
     con = 0.05
-    m = "k"  # if m is a string, this means that we set m=1/(2*p), which degrades to the baseline model.
+    return_prop = "k"  # if this is a string, it means that we set m=1/(2*pon), which degrades to the baseline model.
+
+    # dual_ins = dual(con=con, return_prop=return_prop, cr=cr, c=0.1, step=0.001, density=0.0001)
 
     result_ids = []
     for c in sel_c:
-        result_ids.append(get_dual_result.remote(c=c, con=con, cr=cr, m=m,
+        result_ids.append(get_dual_result.remote(c=c, con=con, cr=cr, return_prop=return_prop,
                                                  step=0.001, density=0.0001))
     results = ray.get(result_ids)
 

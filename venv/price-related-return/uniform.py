@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 
 logging.basicConfig()
 logger = logging.getLogger("uniform")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 EPSILON = 0.000001
 
@@ -97,7 +97,7 @@ def cal_profit(m, p, cr, behaviors):
 
 class uniform:
 
-    def __init__(self, c, con, cr, m, step=0.001, density=0.001):
+    def __init__(self, c, con, cr, return_prop, step=0.001, density=0.001):
         """
         :param c: offline shopping cost
         :param con: online shopping cost
@@ -108,16 +108,18 @@ class uniform:
         """
         self.p = 0
         self.profit = 0
-        self.solve(c=c, con=con, cr=cr, m=m, step=step, density=density)
+        self.solve(c=c, con=con, cr=cr, return_prop=return_prop, step=step, density=density)
 
-    def solve(self, c, con, cr, m, step, density):
+    def solve(self, c, con, cr, return_prop, step, density):
         consumers = np.arange(0, 1, density)
 
         optimal_profit = 0
         optimal_price = 0
         for p in np.arange(0.001, 1, step):
-            if isinstance(m, str):
+            if isinstance(return_prop, str):
                 m = 1 / (2 * p)
+            else:
+                m = return_prop
             logger.debug("current loop: p={:.3f}".format(p))
             if myround(1 / 2 * m * p * p - 1 / 2 * p + c - con) == 0:
                 behaviors_tie_online, behaviors_tie_offline = simulate_behavior(consumers=consumers,
@@ -137,8 +139,8 @@ class uniform:
 
 
 @ray.remote
-def get_uniform_result(c, con, cr, m, step, density):
-    uniform_ins = uniform(c=c, con=con, m=m, cr=cr, step=step, density=density)
+def get_uniform_result(c, con, cr, return_prop, step, density):
+    uniform_ins = uniform(c=c, con=con, return_prop=return_prop, cr=cr, step=step, density=density)
     return uniform_ins.p, uniform_ins.profit
 
 
@@ -146,11 +148,11 @@ if __name__ == "__main__":
     sel_c = np.arange(0.1, 0.155, 0.005)
     cr = 0.32
     con = 0.05
-    m = 1  # if m is a string, this means that we set m=1/(2*p), which degrades to the baseline model.
+    return_prop = 1  # if this is a string, it means that we set m=1/(2*p), which degrades to the baseline model.
 
     result_ids = []
     for c in sel_c:
-        result_ids.append(get_uniform_result.remote(c=c, con=con, cr=cr, m=m,
+        result_ids.append(get_uniform_result.remote(c=c, con=con, cr=cr, return_prop=return_prop,
                                                     step=0.001, density=0.0001))
 
     results = ray.get(result_ids)
