@@ -115,7 +115,9 @@ class uniform:
 
         optimal_profit = 0
         optimal_price = 0
-        for p in np.arange(0, 1, step):
+        for p in np.arange(0.001, 1, step):
+            if isinstance(m, str):
+                m = 1 / (2 * p)
             logger.debug("current loop: p={:.3f}".format(p))
             if myround(1 / 2 * m * p * p - 1 / 2 * p + c - con) == 0:
                 behaviors_tie_online, behaviors_tie_offline = simulate_behavior(consumers=consumers,
@@ -141,15 +143,15 @@ def get_uniform_result(c, con, cr, m, step, density):
 
 
 if __name__ == "__main__":
-    sel_c = np.arange(0.1, 0.15, 0.005)
+    sel_c = np.arange(0.1, 0.155, 0.005)
     cr = 0.32
     con = 0.05
-    m = 1 / 4
+    m = 1  # if m is a string, this means that we set m=1/(2*p), which degrades to the baseline model.
 
     result_ids = []
     for c in sel_c:
         result_ids.append(get_uniform_result.remote(c=c, con=con, cr=cr, m=m,
-                                                    step=0.001, density=0.001))
+                                                    step=0.001, density=0.0001))
 
     results = ray.get(result_ids)
     p_list = []
