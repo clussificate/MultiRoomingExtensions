@@ -7,7 +7,7 @@
 TODO: we may need to rewrite the file if we use simulation method.
 
 """
-from tools_dual import *
+from main.tools_dual import *
 import logging
 import ray
 import matplotlib.pyplot as plt

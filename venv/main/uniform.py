@@ -6,7 +6,7 @@
 @Desc:
 """
 import numpy as np
-from tools_uniform import *
+from main.tools_uniform import *
 import logging
 
 logging.basicConfig()
