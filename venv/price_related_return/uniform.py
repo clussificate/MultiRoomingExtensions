@@ -23,12 +23,16 @@ def myround(num):
     return num
 
 
+def get_return_probability(m, p):
+    return min(m * p, 1)
+
+
 def utility_tie_online(loc, c, con, m, p):
     """
     In this function, the tie is broken by assuming consumers buy online directly
     :param loc: value of theta
     """
-    u_o = 1 / 2 * loc + 1 / 2 * m * p * p - p - con
+    u_o = 1 / 2 * (loc - p) - 1 / 2 * (1 - get_return_probability(m, p)) * p - con
     u_s = 1 / 2 * (loc - p) - c
     if myround(u_o - u_s) >= 0:
         if myround(u_o) >= 0:
@@ -47,7 +51,7 @@ def utility_tie_offline(loc, c, con, m, p):
     In this function, the tie is broken by assuming consumers visit the store
     :param loc: value of theta
     """
-    u_o = 1 / 2 * loc + 1 / 2 * m * p * p - p - con
+    u_o = 1 / 2 * (loc - p) - 1 / 2 * (1 - get_return_probability(m, p)) * p - con
     u_s = 1 / 2 * (loc - p) - c
     if myround(u_o - u_s) > 0:
         if myround(u_o) >= 0:
@@ -75,7 +79,7 @@ def get_demand(behaviors):
 def simulate_behavior(consumers, c, con, m, p):
     # if consumers are indifferent between buying online directly and visiting the store,
     # we break the tie by maximizing the retailer's profit
-    if myround(1 / 2 * m * p * p - 1 / 2 * p + c - con) == 0:
+    if myround(c - con - 1 / 2 * (1 - get_return_probability(m, p)) * p) == 0:
         behaviors_tie_online = [utility_tie_online(loc=consumer, c=c, con=con, m=m, p=p) for consumer in consumers]
         behaviors_tie_offline = [utility_tie_offline(loc=consumer, c=c, con=con, m=m, p=p) for consumer in consumers]
 
@@ -89,7 +93,8 @@ def simulate_behavior(consumers, c, con, m, p):
 
 def cal_profit(m, p, cr, behaviors):
     alpha_o, alpha_s = get_demand(behaviors)
-    online_profit = alpha_o * (1 / 2 * p + 1 / 2 * ((1 - m * p) * p - m * p * cr))  # w.p. 1/2, b=b_H.
+    online_profit = alpha_o * (1 / 2 * p + 1 / 2 * (
+                (1 - get_return_probability(m=m, p=p)) * p - get_return_probability(m=m, p=p) * cr))  # w.p. 1/2, b=b_H.
     store_profit = alpha_s * 1 / 2 * p  # w.p. 1/2, b=b_H
     profit = 1 / 2 * store_profit + 1 / 2 * online_profit  # w.p. 1/2, a=a_H
     return profit
@@ -121,7 +126,8 @@ class uniform:
             else:
                 m = return_prop
             logger.debug("current loop: p={:.3f}".format(p))
-            if myround(1 / 2 * m * p * p - 1 / 2 * p + c - con) == 0:
+#             if myround(1 / 2 * m * p * p - 1 / 2 * p + c - con) == 0:
+            if myround(c - con - 1/2*(1-get_return_probability(m, p))*p)==0:
                 behaviors_tie_online, behaviors_tie_offline = simulate_behavior(consumers=consumers,
                                                                                 c=c, con=con, m=m, p=p)
                 profit_tie_online = cal_profit(m=m, p=p, cr=cr, behaviors=behaviors_tie_online)
@@ -136,7 +142,6 @@ class uniform:
                 optimal_price = p
         self.p = optimal_price
         self.profit = optimal_profit
-
 
 @ray.remote
 def get_uniform_result(c, con, cr, return_prop, step, density):

@@ -23,12 +23,16 @@ def myround(num):
     return num
 
 
+def get_return_probability(m, pon):
+    return min(m * pon, 1)
+
+
 def utility_tie_online(loc, c, con, m, pon, poff):
     """
     In this function, the tie is broken by assuming consumers buy online directly
     :param loc: value of theta
     """
-    u_o = 1 / 2 * loc + 1 / 2 * m * pon * pon - pon - con
+    u_o = 1 / 2 * (loc - pon) - 1 / 2 * (1 - get_return_probability(m=m, pon=pon)) * pon - con
     u_s = 1 / 2 * (loc - poff) - c
     if myround(u_o - u_s) >= 0:
         if myround(u_o) >= 0:
@@ -47,7 +51,7 @@ def utility_tie_offline(loc, c, con, m, pon, poff):
     In this function, the tie is broken by assuming consumers visit the store
     :param loc: value of theta
     """
-    u_o = 1 / 2 * loc + 1 / 2 * m * pon * pon - pon - con
+    u_o = 1 / 2 * (loc - pon) - 1 / 2 * (1 - get_return_probability(m=m, pon=pon)) * pon - con
     u_s = 1 / 2 * (loc - poff) - c
     if myround(u_o - u_s) > 0:
         if myround(u_o) >= 0:
@@ -75,7 +79,7 @@ def get_demand(behaviors):
 def simulate_behavior(consumers, c, con, m, pon, poff):
     # if consumers are indifferent between buying online directly and visiting the store,
     # we break the tie by maximizing the retailer's profit
-    if myround(1 / 2 * m * pon * pon - pon + 1 / 2 * poff + c - con) == 0:
+    if myround(c - 1 / 2 * con - 1 / 2 * (1 - get_return_probability(m=m, pon=pon)) * pon) == 0:
         behaviors_tie_online = [utility_tie_online(loc=consumer, c=c, con=con,
                                                    m=m, pon=pon, poff=poff) for consumer in consumers]
         behaviors_tie_offline = [utility_tie_offline(loc=consumer, c=c, con=con,
@@ -93,9 +97,11 @@ def cal_profit(m, pon, poff, cr, behaviors):
     alpha_o, alpha_s = get_demand(behaviors)
     logger.debug("current demand: alpha_o {:.3f}, alpha_s {:.3f}, return probability:{:.3f}".format(
         alpha_o, alpha_s, m * pon))
-    online_profit = alpha_o * (1 / 2 * pon + 1 / 2 * ((1 - m * pon) * pon - m * pon * cr))  # w.p. 1/2, b=b_H.
+    online_profit = alpha_o * (1 / 2 * pon + 1 / 2 * (
+            (1 - get_return_probability(m=m, pon=pon)) * pon - get_return_probability(m=m,
+                                                                                      pon=pon) * cr))  # w.p. 1/2, b=b_H.
     store_profit = alpha_s * 1 / 2 * poff  # w.p. 1/2, b=b_H
-    logger.debug("current demand: online_profit {:.3f}, store_profit {:.3f}".format(online_profit, store_profit))
+    logger.debug("current demand: online_profit {:.5f}, store_profit {:.5f}".format(online_profit, store_profit))
     profit = 1 / 2 * store_profit + 1 / 2 * online_profit  # w.p. 1/2, a=a_H
     return profit
 
@@ -117,8 +123,8 @@ class dual:
                 m = 1 / (2 * pon)
             else:
                 m = return_prop
-            logger.debug("current m: {:.3f}, pon: {:.3f}".format(m, pon))
-            if myround(1 / 2 * m * pon * pon - pon + 1 / 2 * poff + c - con) == 0:
+#             logger.debug("current m: {:.3f}, pon: {:.3f}".format(m, pon))
+            if myround(c - 1/2*con - 1/2*(1-get_return_probability(m=m, pon=pon))*pon) == 0:
                 behaviors_tie_online, behaviors_tie_offline = simulate_behavior(consumers=consumers,
                                                                                 c=c, con=con, m=m, pon=pon, poff=poff)
                 profit_tie_online = cal_profit(m=m, pon=pon, poff=poff, cr=cr, behaviors=behaviors_tie_online)
@@ -128,7 +134,8 @@ class dual:
                 behaviors = simulate_behavior(consumers=consumers, c=c, con=con, m=m, pon=pon, poff=poff)
                 profit = cal_profit(m=m, pon=pon, poff=poff, cr=cr, behaviors=behaviors)
 
-            logger.debug("current loop: pon={:.3f}, poff={:.3f}, profit={:.3f}".format(pon, poff, profit))
+            logger.debug("current loop: pon={:.3f}, poff={:.3f}, profit={:.5f}".format(pon, poff, profit))
+            logger.debug("-------"*10)
             if profit - optimal_profit > 0:
                 optimal_profit = profit
                 optimal_pon = pon

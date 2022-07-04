@@ -5,14 +5,20 @@
 @file:compare.py
 @Desc:
 """
-from price_related_return.dual import dual
-from price_related_return.uniform import uniform
+from dual import dual
+from uniform import uniform
 import ray
 import logging
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import datetime
+
+logging.basicConfig()
+logger = logging.getLogger("compare")
+logger.setLevel(logging.INFO)
+logging.getLogger('dual').setLevel(logging.ERROR)
+logging.getLogger('uniform').setLevel(logging.ERROR)
 
 
 @ray.remote
@@ -27,7 +33,7 @@ def get_dual_result(c, con, cr, return_prop, step, density):
     return dual_ins.pon, dual_ins.poff, dual_ins.profit
 
 
-def main(ms, filenames, plot=False):
+def main(ms, filenames, plot=False, save=False):
     for m, filename in zip(ms, filenames):
         p_list = []
         piu_list = []
@@ -39,8 +45,8 @@ def main(ms, filenames, plot=False):
         cr = 0.32
         con = 0.05
         step = 0.001
-        density = 0.001
-        sel_c = np.arange(0.1, 0.181, 0.0025)
+        density = 0.005
+        sel_c = np.arange(0.05, 0.18, 0.005)
 
         results_uniform_id = []
         results_dual_id = []
@@ -84,26 +90,25 @@ def main(ms, filenames, plot=False):
 
             plt.tight_layout()
             plt.show()
+        if save:
+            cols = ["c", "p_u", "pi_u", "pon", "poff", "pi_d"]
+            data = np.array([sel_c, p_list, piu_list, pon_list, poff_list, pid_list]).T
 
-        cols = ["c", "p_u", "on_demand_u", "off_demand_u", "pi_u",
-                "pon", "poff", "on_demand_d", "show_demand_d", "off_demand_d", "pi_d"]
-        data = np.array([sel_c, p_list, piu_list, pon_list, poff_list, pid_list]).T
+            data_frame = pd.DataFrame(data=data, columns=cols)
+            data_frame.to_excel(filename, index=False)
 
-        data_frame = pd.DataFrame(data=data, columns=cols)
-        data_frame.to_excel(filename, index=False)
+        logger.info("a work is finished...")
 
 
 if __name__ == "__main__":
-    logging.getLogger('dual').setLevel(logging.ERROR)
-    logging.getLogger('uniform').setLevel(logging.ERROR)
 
-    logging.basicConfig()
-    logger = logging.getLogger("compare")
-    logger.setLevel(logging.INFO)
+    # ms = [2]
+    # filenames=["None"]
+    # main(ms, filenames, save=False, plot=True)
 
     start_time = datetime.datetime.now()
-    filenames = ["output_m_1.xlsx", "output_m_1p5.xlsx", "output_m_3.xlsx"]
-    ms = [1, 1.5, 2]  # sensitivity of return probability
-    main(ms, filenames)
+    filenames = ["output_m_5e-1.xlsx", "output_m_1.xlsx", "output_m_1p5.xlsx", "output_m_3.xlsx"]
+    ms = [0.5, 1, 1.5, 2]  # sensitivity of return probability
+    main(ms, filenames, save=True)
     end_time = datetime.datetime.now()
     logger.info("Total time: {} seconds".format((end_time - start_time).seconds))
