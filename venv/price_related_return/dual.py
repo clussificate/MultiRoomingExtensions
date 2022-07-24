@@ -23,16 +23,22 @@ def myround(num):
     return num
 
 
-def get_return_probability(m, pon):
-    return min(m * pon, 1)
+def get_return_probability(m, pon, kernel):
+    assert kernel in ['sqrt', 'linear']
+
+    if kernel == "sqrt":
+        return min(m * pon ** (1 / 2), 1)
+    elif kernel == "linear":
+        return min(m * pon, 1)
 
 
-def utility_tie_online(loc, c, con, m, pon, poff):
+def utility_tie_online(loc, c, con, pon, poff, gamma):
     """
     In this function, the tie is broken by assuming consumers buy online directly
     :param loc: value of theta
+    :param gamma: return rate
     """
-    u_o = 1 / 2 * (loc - pon) - 1 / 2 * (1 - get_return_probability(m=m, pon=pon)) * pon - con
+    u_o = 1 / 2 * (loc - pon) - 1 / 2 * (1 - gamma) * pon - con
     u_s = 1 / 2 * (loc - poff) - c
     if myround(u_o - u_s) >= 0:
         if myround(u_o) >= 0:
@@ -46,12 +52,12 @@ def utility_tie_online(loc, c, con, m, pon, poff):
             return "l"
 
 
-def utility_tie_offline(loc, c, con, m, pon, poff):
+def utility_tie_offline(loc, c, con, pon, poff, gamma):
     """
     In this function, the tie is broken by assuming consumers visit the store
     :param loc: value of theta
     """
-    u_o = 1 / 2 * (loc - pon) - 1 / 2 * (1 - get_return_probability(m=m, pon=pon)) * pon - con
+    u_o = 1 / 2 * (loc - pon) - 1 / 2 * (1 - gamma) * pon - con
     u_s = 1 / 2 * (loc - poff) - c
     if myround(u_o - u_s) > 0:
         if myround(u_o) >= 0:
@@ -76,30 +82,29 @@ def get_demand(behaviors):
     return alpha_o, alpha_s
 
 
-def simulate_behavior(consumers, c, con, m, pon, poff):
+def simulate_behavior(consumers, c, con, pon, poff, gamma):
     # if consumers are indifferent between buying online directly and visiting the store,
     # we break the tie by maximizing the retailer's profit
-    if myround(c - 1 / 2 * con - 1 / 2 * (1 - get_return_probability(m=m, pon=pon)) * pon) == 0:
-        behaviors_tie_online = [utility_tie_online(loc=consumer, c=c, con=con,
-                                                   m=m, pon=pon, poff=poff) for consumer in consumers]
-        behaviors_tie_offline = [utility_tie_offline(loc=consumer, c=c, con=con,
-                                                     m=m, pon=pon, poff=poff) for consumer in consumers]
+    if myround(c - 1 / 2 * con - 1 / 2 * (1 - gamma) * pon) == 0:
+        behaviors_tie_online = [utility_tie_online(loc=consumer, c=c, con=con, pon=pon, poff=poff, gamma=gamma)
+                                for consumer in consumers]
+        behaviors_tie_offline = [utility_tie_offline(loc=consumer, c=c, con=con, pon=pon, poff=poff, gamma=gamma)
+                                 for consumer in consumers]
 
         return behaviors_tie_online, behaviors_tie_offline
     else:
         # if there is no tie, utility_tie_online and utility_tie_offline are equivalent.
-        behaviors = [utility_tie_online(loc=consumer, c=c, con=con, m=m, pon=pon, poff=poff) for consumer in consumers]
-
+        behaviors = [utility_tie_online(loc=consumer, c=c, con=con, pon=pon, poff=poff, gamma=gamma)
+                     for consumer in consumers]
         return behaviors
 
 
-def cal_profit(m, pon, poff, cr, behaviors):
+def cal_profit(pon, poff, cr, behaviors, gamma):
     alpha_o, alpha_s = get_demand(behaviors)
     logger.debug("current demand: alpha_o {:.3f}, alpha_s {:.3f}, return probability:{:.3f}".format(
-        alpha_o, alpha_s, m * pon))
+        alpha_o, alpha_s, gamma))
     online_profit = alpha_o * (1 / 2 * pon + 1 / 2 * (
-            (1 - get_return_probability(m=m, pon=pon)) * pon - get_return_probability(m=m,
-                                                                                      pon=pon) * cr))  # w.p. 1/2, b=b_H.
+            (1 - gamma) * pon - gamma * cr))  # w.p. 1/2, b=b_H.
     store_profit = alpha_s * 1 / 2 * poff  # w.p. 1/2, b=b_H
     logger.debug("current demand: online_profit {:.5f}, store_profit {:.5f}".format(online_profit, store_profit))
     profit = 1 / 2 * store_profit + 1 / 2 * online_profit  # w.p. 1/2, a=a_H
@@ -107,35 +112,35 @@ def cal_profit(m, pon, poff, cr, behaviors):
 
 
 class dual:
-    def __init__(self, c, con, cr, return_prop, step=0.001, density=0.001):
+    def __init__(self, c, con, cr, return_prop, kernel="linear", step=0.001, density=0.001):
         self.pon = 0
         self.poff = 0
         self.profit = 0
-        self.solve(c=c, con=con, cr=cr, return_prop=return_prop, step=step, density=density)
+        self.solve(c=c, con=con, cr=cr, return_prop=return_prop, kernel=kernel, step=step, density=density)
 
-    def solve(self, c, con, cr, return_prop, step, density):
+    def solve(self, c, con, cr, return_prop, kernel, step, density):
         consumers = np.arange(0, 1, density)
         optimal_profit = 0
         optimal_pon = 0
         for pon in np.arange(0.001, 1, step):
             poff = pon + con
             if isinstance(return_prop, str):
-                m = 1 / (2 * pon)
+                gamma = 1 / 2
             else:
-                m = return_prop
-#             logger.debug("current m: {:.3f}, pon: {:.3f}".format(m, pon))
-            if myround(c - 1/2*con - 1/2*(1-get_return_probability(m=m, pon=pon))*pon) == 0:
-                behaviors_tie_online, behaviors_tie_offline = simulate_behavior(consumers=consumers,
-                                                                                c=c, con=con, m=m, pon=pon, poff=poff)
-                profit_tie_online = cal_profit(m=m, pon=pon, poff=poff, cr=cr, behaviors=behaviors_tie_online)
-                profit_tie_offline = cal_profit(m=m, pon=pon, poff=poff, cr=cr, behaviors=behaviors_tie_offline)
+                gamma = get_return_probability(m=return_prop, pon=pon, kernel=kernel)
+            #             logger.debug("current m: {:.3f}, pon: {:.3f}".format(m, pon))
+            if myround(c - 1 / 2 * con - 1 / 2 * (1 - gamma) * pon) == 0:
+                behaviors_tie_online, behaviors_tie_offline = simulate_behavior(consumers=consumers, c=c, con=con,
+                                                                                pon=pon, poff=poff, gamma=gamma)
+                profit_tie_online = cal_profit(pon=pon, poff=poff, cr=cr, behaviors=behaviors_tie_online, gamma=gamma)
+                profit_tie_offline = cal_profit(pon=pon, poff=poff, cr=cr, behaviors=behaviors_tie_offline, gamma=gamma)
                 profit = max(profit_tie_online, profit_tie_offline)
             else:
-                behaviors = simulate_behavior(consumers=consumers, c=c, con=con, m=m, pon=pon, poff=poff)
-                profit = cal_profit(m=m, pon=pon, poff=poff, cr=cr, behaviors=behaviors)
+                behaviors = simulate_behavior(consumers=consumers, c=c, con=con, pon=pon, poff=poff, gamma=gamma)
+                profit = cal_profit(pon=pon, poff=poff, cr=cr, behaviors=behaviors, gamma=gamma)
 
             logger.debug("current loop: pon={:.3f}, poff={:.3f}, profit={:.5f}".format(pon, poff, profit))
-            logger.debug("-------"*10)
+            logger.debug("-------" * 10)
             if profit - optimal_profit > 0:
                 optimal_profit = profit
                 optimal_pon = pon
@@ -145,8 +150,8 @@ class dual:
 
 
 @ray.remote
-def get_dual_result(c, con, cr, return_prop, step, density):
-    dual_ins = dual(c=c, con=con, return_prop=return_prop, cr=cr, step=step, density=density)
+def get_dual_result(c, con, cr, return_prop, kernel, step, density):
+    dual_ins = dual(c=c, con=con, return_prop=return_prop, cr=cr,kernel=kernel, step=step, density=density)
     return dual_ins.pon, dual_ins.poff, dual_ins.profit
 
 
@@ -154,13 +159,13 @@ if __name__ == "__main__":
     sel_c = np.arange(0.1, 0.155, 0.005)
     cr = 0.32
     con = 0.05
-    return_prop = "k"  # if this is a string, it means that we set m=1/(2*pon), which degrades to the baseline model.
-
+    return_prop = "k"  # if this is a string, it means that we set gamma= 1/2, which degrades to the baseline model.
+    kernel = 'sqrt'
     # dual_ins = dual(con=con, return_prop=return_prop, cr=cr, c=0.1, step=0.001, density=0.0001)
 
     result_ids = []
     for c in sel_c:
-        result_ids.append(get_dual_result.remote(c=c, con=con, cr=cr, return_prop=return_prop,
+        result_ids.append(get_dual_result.remote(c=c, con=con, cr=cr, return_prop=return_prop, kernel=kernel,
                                                  step=0.001, density=0.0001))
     results = ray.get(result_ids)
 
