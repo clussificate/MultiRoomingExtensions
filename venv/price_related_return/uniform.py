@@ -10,6 +10,7 @@ import numpy as np
 import logging
 import ray
 import matplotlib.pyplot as plt
+from scipy.stats import truncnorm
 
 logging.basicConfig()
 logger = logging.getLogger("uniform")
@@ -23,13 +24,20 @@ def myround(num):
     return num
 
 
-def get_return_probability(m, p, kernel):
-    assert kernel in ['sqrt', 'linear']
+def get_return_probability(model_para, p, kernel):
+    assert kernel in ['constant', 'sqrt', 'linear', "normal"]
 
     if kernel == "sqrt":
+        m = model_para['m']
         return min(m * p ** (1 / 2), 1)
     elif kernel == "linear":
+        m = model_para['m']
         return min(m * p, 1)
+    elif kernel == 'normal':
+        # the Truncated Normal Distribution is used.
+        mean = model_para['mu']
+        std = model_para['std']
+        return truncnorm.cdf(p, a=0, b=1, loc=mean, scale=std)
 
 
 def utility_tie_online(loc, c, con, p, gamma):
@@ -116,7 +124,7 @@ def cal_profit(p, cr, gamma, behaviors):
 
 class uniform:
 
-    def __init__(self, c, con, cr, return_prop, kernel='linear', step=0.001, density=0.001):
+    def __init__(self, c, con, cr, model_para, kernel='linear', step=0.001, density=0.001):
         """
         :param c: offline shopping cost
         :param con: online shopping cost
@@ -126,18 +134,18 @@ class uniform:
         """
         self.p = 0
         self.profit = 0
-        self.solve(c=c, con=con, cr=cr, return_prop=return_prop, kernel=kernel, step=step, density=density)
+        self.solve(c=c, con=con, cr=cr, model_para=model_para, kernel=kernel, step=step, density=density)
 
-    def solve(self, c, con, cr, return_prop, kernel, step, density):
+    def solve(self, c, con, cr, model_para, kernel, step, density):
         consumers = np.arange(0, 1, density)
 
         optimal_profit = 0
         optimal_price = 0
         for p in np.arange(0.001, 1, step):
-            if isinstance(return_prop, str):
+            if kernel == 'constant':
                 gamma = 1 / 2
             else:
-                gamma = get_return_probability(m=return_prop, p=p, kernel=kernel)
+                gamma = get_return_probability(model_para=model_para, p=p, kernel=kernel)
             logger.debug("current loop: p={:.3f}".format(p))
             #             if myround(1 / 2 * m * p * p - 1 / 2 * p + c - con) == 0:
             if myround(c - con - 1 / 2 * (1 - gamma) * p) == 0:
@@ -158,24 +166,24 @@ class uniform:
 
 
 @ray.remote
-def get_uniform_result(c, con, cr, return_prop, kernel, step, density):
-    uniform_ins = uniform(c=c, con=con, return_prop=return_prop, cr=cr, kernel=kernel, step=step, density=density)
+def get_uniform_result(c, con, cr, model_para, kernel, step, density):
+    uniform_ins = uniform(c=c, con=con, model_para=model_para, cr=cr, kernel=kernel, step=step, density=density)
     return uniform_ins.p, uniform_ins.profit
 
 
 if __name__ == "__main__":
+
+    logger.setLevel(logging.DEBUG)
     sel_c = np.arange(0.1, 0.155, 0.005)
     cr = 0.32
     con = 0.05
 
-    # if this is a string, it means that we set m=1/(2*p),
-    # which degrades to the baseline model, i.e., return rate=1/2.
-    return_prop = 1
-    kernel = 'sqrt'
+    model_para = {"mu": 0.2, "std": 1}
+    kernel = 'normal' # if kernel == "constant", we set return rate as 1/2.
 
     result_ids = []
     for c in sel_c:
-        result_ids.append(get_uniform_result.remote(c=c, con=con, cr=cr, return_prop=return_prop, kernel=kernel,
+        result_ids.append(get_uniform_result.remote(c=c, con=con, cr=cr, model_para=model_para, kernel=kernel,
                                                     step=0.001, density=0.0001))
 
     results = ray.get(result_ids)

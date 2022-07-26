@@ -3,16 +3,16 @@
 @Created at 2022/7/3 13:07
 @Author: Kurt
 @file:dual.py
-@Desc:
 """
 from collections import Counter
 import numpy as np
 import logging
 import ray
 import matplotlib.pyplot as plt
+from scipy.stats import truncnorm
 
 logging.basicConfig()
-logger = logging.getLogger("uniform")
+logger = logging.getLogger("dual")
 logger.setLevel(logging.ERROR)
 
 EPSILON = 0.000001
@@ -23,23 +23,30 @@ def myround(num):
     return num
 
 
-def get_return_probability(m, pon, kernel):
-    assert kernel in ['sqrt', 'linear']
+def get_return_probability(model_para, pon, kernel):
+    assert kernel in ['constant', 'sqrt', 'linear', "normal"]
 
     if kernel == "sqrt":
+        m = model_para['m']
         return min(m * pon ** (1 / 2), 1)
     elif kernel == "linear":
+        m = model_para['m']
         return min(m * pon, 1)
+    elif kernel == 'normal':
+        # the Truncated Normal Distribution is used.
+        mean = model_para['mu']
+        std = model_para['std']
+        return truncnorm.cdf(pon, a=0, b=1, loc=mean, scale=std)
 
 
-def utility_tie_online(loc, c, con, pon, poff, gamma):
+def utility_tie_online(theta, c, con, pon, poff, gamma):
     """
     In this function, the tie is broken by assuming consumers buy online directly
-    :param loc: value of theta
+    :param theta: value of theta
     :param gamma: return rate
     """
-    u_o = 1 / 2 * (loc - pon) - 1 / 2 * (1 - gamma) * pon - con
-    u_s = 1 / 2 * (loc - poff) - c
+    u_o = 1 / 2 * (theta - pon) - 1 / 2 * (1 - gamma) * pon - con
+    u_s = 1 / 2 * (theta - poff) - c
     if myround(u_o - u_s) >= 0:
         if myround(u_o) >= 0:
             return "o"
@@ -52,13 +59,13 @@ def utility_tie_online(loc, c, con, pon, poff, gamma):
             return "l"
 
 
-def utility_tie_offline(loc, c, con, pon, poff, gamma):
+def utility_tie_offline(theta, c, con, pon, poff, gamma):
     """
     In this function, the tie is broken by assuming consumers visit the store
-    :param loc: value of theta
+    :param theta: value of theta
     """
-    u_o = 1 / 2 * (loc - pon) - 1 / 2 * (1 - gamma) * pon - con
-    u_s = 1 / 2 * (loc - poff) - c
+    u_o = 1 / 2 * (theta - pon) - 1 / 2 * (1 - gamma) * pon - con
+    u_s = 1 / 2 * (theta - poff) - c
     if myround(u_o - u_s) > 0:
         if myround(u_o) >= 0:
             return "o"
@@ -86,15 +93,15 @@ def simulate_behavior(consumers, c, con, pon, poff, gamma):
     # if consumers are indifferent between buying online directly and visiting the store,
     # we break the tie by maximizing the retailer's profit
     if myround(c - 1 / 2 * con - 1 / 2 * (1 - gamma) * pon) == 0:
-        behaviors_tie_online = [utility_tie_online(loc=consumer, c=c, con=con, pon=pon, poff=poff, gamma=gamma)
+        behaviors_tie_online = [utility_tie_online(theta=consumer, c=c, con=con, pon=pon, poff=poff, gamma=gamma)
                                 for consumer in consumers]
-        behaviors_tie_offline = [utility_tie_offline(loc=consumer, c=c, con=con, pon=pon, poff=poff, gamma=gamma)
+        behaviors_tie_offline = [utility_tie_offline(theta=consumer, c=c, con=con, pon=pon, poff=poff, gamma=gamma)
                                  for consumer in consumers]
 
         return behaviors_tie_online, behaviors_tie_offline
     else:
         # if there is no tie, utility_tie_online and utility_tie_offline are equivalent.
-        behaviors = [utility_tie_online(loc=consumer, c=c, con=con, pon=pon, poff=poff, gamma=gamma)
+        behaviors = [utility_tie_online(theta=consumer, c=c, con=con, pon=pon, poff=poff, gamma=gamma)
                      for consumer in consumers]
         return behaviors
 
@@ -116,18 +123,18 @@ class dual:
         self.pon = 0
         self.poff = 0
         self.profit = 0
-        self.solve(c=c, con=con, cr=cr, return_prop=return_prop, kernel=kernel, step=step, density=density)
+        self.solve(c=c, con=con, cr=cr, model_para=model_para, kernel=kernel, step=step, density=density)
 
-    def solve(self, c, con, cr, return_prop, kernel, step, density):
+    def solve(self, c, con, cr, model_para, kernel, step, density):
         consumers = np.arange(0, 1, density)
         optimal_profit = 0
         optimal_pon = 0
         for pon in np.arange(0.001, 1, step):
             poff = pon + con
-            if isinstance(return_prop, str):
+            if kernel == 'constant':
                 gamma = 1 / 2
             else:
-                gamma = get_return_probability(m=return_prop, pon=pon, kernel=kernel)
+                gamma = get_return_probability(model_para=model_para, pon=pon, kernel=kernel)
             #             logger.debug("current m: {:.3f}, pon: {:.3f}".format(m, pon))
             if myround(c - 1 / 2 * con - 1 / 2 * (1 - gamma) * pon) == 0:
                 behaviors_tie_online, behaviors_tie_offline = simulate_behavior(consumers=consumers, c=c, con=con,
@@ -151,7 +158,7 @@ class dual:
 
 @ray.remote
 def get_dual_result(c, con, cr, return_prop, kernel, step, density):
-    dual_ins = dual(c=c, con=con, return_prop=return_prop, cr=cr,kernel=kernel, step=step, density=density)
+    dual_ins = dual(c=c, con=con, return_prop=return_prop, cr=cr, kernel=kernel, step=step, density=density)
     return dual_ins.pon, dual_ins.poff, dual_ins.profit
 
 
@@ -159,13 +166,14 @@ if __name__ == "__main__":
     sel_c = np.arange(0.1, 0.155, 0.005)
     cr = 0.32
     con = 0.05
-    return_prop = "k"  # if this is a string, it means that we set gamma= 1/2, which degrades to the baseline model.
-    kernel = 'sqrt'
+    model_para = {"mu": 0.1,
+                  "std": 0.5}
+    kernel = 'normal'  # if kernel == "constant", we set return rate as 1/2.
     # dual_ins = dual(con=con, return_prop=return_prop, cr=cr, c=0.1, step=0.001, density=0.0001)
 
     result_ids = []
     for c in sel_c:
-        result_ids.append(get_dual_result.remote(c=c, con=con, cr=cr, return_prop=return_prop, kernel=kernel,
+        result_ids.append(get_dual_result.remote(c=c, con=con, cr=cr, model_para=model_para, kernel=kernel,
                                                  step=0.001, density=0.0001))
     results = ray.get(result_ids)
 
