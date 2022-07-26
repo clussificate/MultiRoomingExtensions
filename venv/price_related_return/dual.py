@@ -13,7 +13,7 @@ from scipy.stats import truncnorm
 
 logging.basicConfig()
 logger = logging.getLogger("dual")
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 
 EPSILON = 0.000001
 
@@ -34,9 +34,9 @@ def get_return_probability(model_para, pon, kernel):
         return min(m * pon, 1)
     elif kernel == 'normal':
         # the Truncated Normal Distribution is used.
-        mean = model_para['mu']
+        mu = model_para['mu']
         std = model_para['std']
-        return truncnorm.cdf(pon, a=0, b=1, loc=mean, scale=std)
+        return truncnorm.cdf(pon, a=(0 - mu) / std, b=(1 - mu) / std, loc=mu, scale=std)
 
 
 def utility_tie_online(theta, c, con, pon, poff, gamma):
@@ -119,7 +119,7 @@ def cal_profit(pon, poff, cr, behaviors, gamma):
 
 
 class dual:
-    def __init__(self, c, con, cr, return_prop, kernel="linear", step=0.001, density=0.001):
+    def __init__(self, c, con, cr, model_para, kernel="constant", step=0.001, density=0.001):
         self.pon = 0
         self.poff = 0
         self.profit = 0
@@ -157,24 +157,23 @@ class dual:
 
 
 @ray.remote
-def get_dual_result(c, con, cr, return_prop, kernel, step, density):
-    dual_ins = dual(c=c, con=con, return_prop=return_prop, cr=cr, kernel=kernel, step=step, density=density)
+def get_dual_result(c, con, cr, model_para, kernel, step, density):
+    dual_ins = dual(c=c, con=con, model_para=model_para, cr=cr, kernel=kernel, step=step, density=density)
     return dual_ins.pon, dual_ins.poff, dual_ins.profit
 
 
 if __name__ == "__main__":
-    sel_c = np.arange(0.1, 0.155, 0.005)
-    cr = 0.32
+    sel_c = np.arange(0.1, 0.18, 0.005)
+    cr = 0.4
     con = 0.05
-    model_para = {"mu": 0.1,
-                  "std": 0.5}
+    model_para = {"mu": 0.0, "std": 0.9}
     kernel = 'normal'  # if kernel == "constant", we set return rate as 1/2.
     # dual_ins = dual(con=con, return_prop=return_prop, cr=cr, c=0.1, step=0.001, density=0.0001)
 
     result_ids = []
     for c in sel_c:
         result_ids.append(get_dual_result.remote(c=c, con=con, cr=cr, model_para=model_para, kernel=kernel,
-                                                 step=0.001, density=0.0001))
+                                                 step=0.0025, density=0.0001))
     results = ray.get(result_ids)
 
     pon_list = []
@@ -193,8 +192,8 @@ if __name__ == "__main__":
     ax2.plot(sel_c, poff_list, c='green', ls='--', ms=6, marker='D',
              label="Offline of Dual")
 
-    ax1.axis(ymin=0.026, ymax=0.042)
-    ax2.axis(ymin=0.26, ymax=0.46)
+    # ax1.axis(ymin=0.026, ymax=0.042)
+    # ax2.axis(ymin=0.26, ymax=0.46)
 
     ax1.legend(prop=dict(size=9), frameon=False)
     ax1.set_ylabel("Profits", fontsize=16)

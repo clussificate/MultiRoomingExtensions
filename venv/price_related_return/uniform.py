@@ -35,9 +35,9 @@ def get_return_probability(model_para, p, kernel):
         return min(m * p, 1)
     elif kernel == 'normal':
         # the Truncated Normal Distribution is used.
-        mean = model_para['mu']
+        mu = model_para['mu']
         std = model_para['std']
-        return truncnorm.cdf(p, a=0, b=1, loc=mean, scale=std)
+        return truncnorm.cdf(p, a=(0 - mu) / std, b=(1 - mu) / std, loc=mu, scale=std)
 
 
 def utility_tie_online(loc, c, con, p, gamma):
@@ -178,13 +178,14 @@ if __name__ == "__main__":
     cr = 0.32
     con = 0.05
 
-    model_para = {"mu": 0.2, "std": 1}
-    kernel = 'normal' # if kernel == "constant", we set return rate as 1/2.
+    model_para = {"mu": 0.0, "std": 0.6}
+    # model_para = {"m": 0.85}
+    kernel = 'normal'  # if kernel == "constant", we set return rate as 1/2.
 
     result_ids = []
     for c in sel_c:
         result_ids.append(get_uniform_result.remote(c=c, con=con, cr=cr, model_para=model_para, kernel=kernel,
-                                                    step=0.001, density=0.0001))
+                                                    step=0.0025, density=0.0001))
 
     results = ray.get(result_ids)
     p_list = []
