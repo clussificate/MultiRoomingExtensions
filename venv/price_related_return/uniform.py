@@ -179,7 +179,7 @@ class uniform:
                 return_cost = 1 / 2 * p
             else:
                 gamma = get_return_probability(model_para=model_para, p=p, kernel=kernel)
-                return_cost = get_return_probability(model_para=model_para, p=p, kernel=kernel)
+                return_cost = get_expected_return_cost(model_para=model_para, p=p, kernel=kernel)
             logger.debug("current loop: p={:.3f}".format(p))
             #             if myround(1 / 2 * m * p * p - 1 / 2 * p + c - con) == 0:
             if tie_found(c=c, con=con, rho=rho, p=p, return_cost=return_cost):
