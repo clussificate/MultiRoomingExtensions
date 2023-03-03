@@ -25,7 +25,7 @@ def myround(num):
 
 def tie_found(c, con, rho, pon, poff, return_cost):
     """
-    the tie break rule is independent of theta, due to the homogeneous online costs.
+    the tie-breaking rule is independent of theta, due to the homogeneous online costs.
     """
     u_o = 1 / 2 * (1 + rho) * (- pon) - 1 / 2 * (1 - rho) * return_cost - con
     u_s = 1 / 2 * (1 + rho) * (- poff) - c
@@ -122,7 +122,7 @@ def get_demand(behaviors):
 def simulate_behavior(consumers, c, con, rho, pon, poff, return_cost):
     # if consumers are indifferent between buying online directly and visiting the store,
     # we break the tie by maximizing the retailer's profit
-    if tie_found(c=c, con=con, rho=rho, pon=pon, poff=pon, return_cost=return_cost):
+    if tie_found(c=c, con=con, rho=rho, pon=pon, poff=poff, return_cost=return_cost):
         behaviors_tie_online = [
             utility_tie_online(theta=consumer, c=c, con=con, rho=rho, pon=pon, poff=poff, return_cost=return_cost)
             for consumer in consumers]
@@ -169,12 +169,12 @@ class dual:
             poff = pon + con
             if kernel == 'constant':
                 gamma = 1 / 2
-                return_cost = 1/2 * pon
+                return_cost = 1 / 2 * pon
             else:
                 gamma = get_return_probability(model_para=model_para, pon=pon, kernel=kernel)
                 return_cost = get_expected_return_cost(pon=pon, model_para=model_para, kernel=kernel)
             #             logger.debug("current m: {:.3f}, pon: {:.3f}".format(m, pon))
-            if tie_found(c=c, con=con, rho=rho, pon=pon, poff=pon, return_cost=return_cost):
+            if tie_found(c=c, con=con, rho=rho, pon=pon, poff=poff, return_cost=return_cost):
                 behaviors_tie_online, behaviors_tie_offline = simulate_behavior(consumers=consumers, c=c, con=con,
                                                                                 rho=rho, pon=pon, poff=poff,
                                                                                 return_cost=return_cost)
@@ -211,42 +211,45 @@ if __name__ == "__main__":
     rho = 0
 
     # if kernel == "constant", we set return rate as 1/2.
-    model_para = {"a": 0.0, "b": 1}
+    model_para = {"a": 0.0, "b": 0.5}
     kernel = 'linear'
+    c = 0.14
+    dual(c=c, con=con, rho=rho, model_para=model_para, cr=cr, kernel=kernel, step=0.001, density=0.0001)
+
     # model_para = {"mu": 0.0, "std": 0.9}
     # kernel = 'normal'
     # dual_ins = dual(con=con, return_prop=return_prop, cr=cr, c=0.1, step=0.001, density=0.0001)
 
-    result_ids = []
-    for c in sel_c:
-        result_ids.append(get_dual_result.remote(c=c, con=con, cr=cr, rho=rho, model_para=model_para, kernel=kernel,
-                                                 step=0.0025, density=0.0001))
-    results = ray.get(result_ids)
+    # result_ids = []
+    # for c in sel_c:
+    #     result_ids.append(get_dual_result.remote(c=c, con=con, cr=cr, rho=rho, model_para=model_para, kernel=kernel,
+    #                                              step=0.0025, density=0.0001))
+    # results = ray.get(result_ids)
 
-    pon_list = []
-    poff_list = []
-    pid_list = []
-    for result in results:
-        pon_list.append(result[0])
-        poff_list.append(result[1])
-        pid_list.append(result[2])
-    fig = plt.figure(figsize=(5, 8))
-    ax1 = fig.add_subplot(2, 1, 1)
-    ax1.plot(sel_c, pid_list, c='red', ls='--', ms=6, marker='*', label="Dual")
-
-    ax2 = fig.add_subplot(2, 1, 2)
-    ax2.plot(sel_c, pon_list, c='blue', ls='--', ms=6, marker='o', label="Online of Dual")
-    ax2.plot(sel_c, poff_list, c='green', ls='--', ms=6, marker='D',
-             label="Offline of Dual")
-
-    # ax1.axis(ymin=0.026, ymax=0.042)
-    # ax2.axis(ymin=0.26, ymax=0.46)
-
-    ax1.legend(prop=dict(size=9), frameon=False)
-    ax1.set_ylabel("Profits", fontsize=16)
-    ax1.set_xlabel("c", fontsize=16)
-    ax2.legend(prop=dict(size=9), frameon=False)
-    ax2.set_ylabel("Prices", fontsize=16)
-    ax2.set_xlabel("c", fontsize=16)
-    plt.tight_layout()
-    plt.show()
+    # pon_list = []
+    # poff_list = []
+    # pid_list = []
+    # for result in results:
+    #     pon_list.append(result[0])
+    #     poff_list.append(result[1])
+    #     pid_list.append(result[2])
+    # fig = plt.figure(figsize=(5, 8))
+    # ax1 = fig.add_subplot(2, 1, 1)
+    # ax1.plot(sel_c, pid_list, c='red', ls='--', ms=6, marker='*', label="Dual")
+    #
+    # ax2 = fig.add_subplot(2, 1, 2)
+    # ax2.plot(sel_c, pon_list, c='blue', ls='--', ms=6, marker='o', label="Online of Dual")
+    # ax2.plot(sel_c, poff_list, c='green', ls='--', ms=6, marker='D',
+    #          label="Offline of Dual")
+    #
+    # # ax1.axis(ymin=0.026, ymax=0.042)
+    # # ax2.axis(ymin=0.26, ymax=0.46)
+    #
+    # ax1.legend(prop=dict(size=9), frameon=False)
+    # ax1.set_ylabel("Profits", fontsize=16)
+    # ax1.set_xlabel("c", fontsize=16)
+    # ax2.legend(prop=dict(size=9), frameon=False)
+    # ax2.set_ylabel("Prices", fontsize=16)
+    # ax2.set_xlabel("c", fontsize=16)
+    # plt.tight_layout()
+    # plt.show()

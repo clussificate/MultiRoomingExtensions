@@ -26,7 +26,7 @@ def myround(num):
 
 def tie_found(c, con, rho, p, return_cost):
     """
-    the tie break rule is independent of theta, due to the homogeneous online costs.
+    the tie-breaking rule is independent of theta, due to the homogeneous online costs.
     """
     u_o = 1 / 2 * (1 + rho) * (- p) - 1 / 2 * (1 - rho) * return_cost - con
     u_s = 1 / 2 * (1 + rho) * (- p) - c

@@ -11,7 +11,7 @@ import logging
 
 logging.basicConfig()
 logger = logging.getLogger("uniform")
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.INFO)
 
 
 class uniform:
@@ -42,7 +42,7 @@ class uniform:
 
 
 if __name__ == "__main__":
-    uniform(c=0.1, cr=0.32, s=0.49, h=0.51, step=0.005)
+    uniform(c=0.13, cr=0.32, s=0.03, h=0.07, step=0.005)
     # cr = 0.3
     # con = 0.05
     # for c in np.arange(0.05, 0.2, 0.01):
