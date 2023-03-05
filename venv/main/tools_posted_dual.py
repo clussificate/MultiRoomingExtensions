@@ -26,10 +26,10 @@ def scenario_check(c, pon, poff):
 
 def calculate_profit(cr, pon, poff, alpha_o, alpha_ss, alpha_so):
     online_profit = alpha_o * (
-            1 / 2 * pon + 1 / 2 * (1 / 2 * pon - 1 / 2 * cr))  # w.p. 1/2, b=b_H. Then w.p. 1/2 consumer returns it.
+            1 / 2 * pon + 1 / 2 * (1 / 2 * pon - 1 / 2 * cr))  # w.p.1/2, a=a_L. Then w.p. 1/2 consumer returns it.
     store_profit = alpha_ss * 1 / 2 * poff  # w.p. 1/2, b=b_H
     showroom_profit = alpha_so * 1 / 2 * pon
-    profit = 1 / 2 * store_profit + 1 / 2 * online_profit + 1 / 2 * showroom_profit  # w.p. 1/2, a=a_H
+    profit = 1 / 2 * store_profit + 1 / 2 * online_profit + 1 / 2 * showroom_profit  # w.p. 1/2, b=b_H
     return profit
 
 

@@ -47,7 +47,7 @@ def calculate_demand(p, c, s, h, scenario):
 
 def calculate_profit(cr, p, alpha_o, alpha_s):
     online_profit = alpha_o * (
-            1 / 2 * p + 1 / 2 * (1 / 2 * p - 1 / 2 * cr))  # w.p. 1/2, b=b_H. Then w.p. 1/2 consumer returns it.
+            1 / 2 * p + 1 / 2 * (1 / 2 * p - 1 / 2 * cr))  # w.p. 1/2, a=a_H. Then w.p. 1/2 consumer returns it.
     store_profit = alpha_s * 1 / 2 * p  # w.p. 1/2, b=b_H
-    profit = 1 / 2 * store_profit + 1 / 2 * online_profit  # w.p. 1/2, a=a_H
+    profit = 1 / 2 * store_profit + 1 / 2 * online_profit  # w.p. 1/2, b=b_H
     return profit
